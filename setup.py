@@ -5,7 +5,7 @@ import os
 
 def get_version():
     g = {}
-    exec(open(os.path.join('uproot', 'version.py')).read(), g)
+    exec(open(os.path.join('twanet', 'version.py')).read(), g)
     return g['__version__']
 
 
