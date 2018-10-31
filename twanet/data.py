@@ -41,7 +41,7 @@ class dataset:
         self._weights = None
         self._df = None
         self.files = [PosixPath(f) for f in files]
-        for f in files:
+        for f in self.files:
             assert f.exists()
         if not name:
             self.name = files[0]
@@ -63,12 +63,20 @@ class dataset:
         return self._weights
 
     @weights.setter
-    def df(self, new) -> None:
+    def weights(self, new) -> None:
         assert len(new) == len(self._df)
         self._weights = new
 
     def construct(self):
         """Not implemented for base class"""
+        raise NotImplementedError
+
+    def __add__(self, other):
+        """Add to datasets together"""
+        raise NotImplementedError
+
+    def append(self, other):
+        """Append a dataset to an exiting one"""
         raise NotImplementedError
 
 
