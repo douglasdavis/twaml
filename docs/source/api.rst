@@ -9,3 +9,4 @@ API Reference
    :maxdepth: 1
 
    api_data.rst
+   api_viz.rst
