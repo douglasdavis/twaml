@@ -4,7 +4,7 @@ python:
   - "3.6"
 install:
   - pip install --upgrade pip
-  - pip install uproot pandas pytest
+  - pip install uproot pandas pytest matplotlib
   - pip install -U -q -e .
 script:
   - pytest
