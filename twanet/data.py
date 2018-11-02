@@ -2,7 +2,7 @@ import uproot
 import pandas as pd
 import numpy as np
 from pathlib import PosixPath
-from typing import List, Dict
+from typing import List, Dict, Tuple, Optional
 
 
 class dataset:
@@ -20,11 +20,16 @@ class dataset:
       The array of event weights
     df: pandas.DataFrame
       The payload of the class, a dataframe
+    is_constructed: bool
+      Flag to know if the dataset is constructed
+    label: Optional[int]
+      Optional dataset label (as an int)
 
     """
 
     def __init__(self, files: List[str], name: str = '',
-                 weight_name: str = 'weight_nominal') -> None:
+                 weight_name: str = 'weight_nominal',
+                 label: Optional[int] = None) -> None:
         """
         Default dataset creation
 
@@ -48,6 +53,8 @@ class dataset:
         else:
             self.name = name
         self.weight_name = weight_name
+        self.constructed = False
+        self._label = label
 
     @property
     def df(self) -> pd.DataFrame:
@@ -55,7 +62,7 @@ class dataset:
 
     @df.setter
     def df(self, new: pd.DataFrame) -> None:
-        assert len(new) == len(self._weights)
+        assert len(new) == len(self._weights), 'df length != weight length'
         self._df = new
 
     @property
@@ -64,20 +71,90 @@ class dataset:
 
     @weights.setter
     def weights(self, new) -> None:
-        assert len(new) == len(self._df)
+        assert len(new) == len(self._df), 'weight length != frame length'
         self._weights = new
+
+    @property
+    def label(self) -> int:
+        return self._label
+
+    @label.setter
+    def label(self, new: int) ->None:
+        self._label = new
+
+    @property
+    def is_constructed(self) -> bool:
+        return self.constructed
+
+    @property
+    def shape(self) -> Tuple:
+        """Get shape of dataset (shortcut to pd.DataFrame.shape)"""
+        return self.df.shape
+
+    @shape.setter
+    def shape(self, new) -> None:
+        raise NotImplementedError('Cannot set shape manually')
+
+    def _set_df_and_weights(self, df: pd.DataFrame, w: np.ndarray) -> None:
+        assert len(df) == len(w), 'unequal length df and weights'
+        self._df = df
+        self._weights = w
+        self.constructed = True
 
     def construct(self):
         """Not implemented for base class"""
         raise NotImplementedError
 
-    def __add__(self, other):
-        """Add to datasets together"""
-        raise NotImplementedError
+    def __add__(self, other: 'dataset') -> 'dataset':
+        """Add to datasets together
 
-    def append(self, other):
-        """Append a dataset to an exiting one"""
-        raise NotImplementedError
+        We perform contatenations of the dataframes and weights to
+        generate a new dataset with a new payload.
+
+        """
+        assert self.is_constructed, \
+            'Unconstructed df (self)'
+        assert other.is_constructed, \
+            'Unconstructed df (other)'
+        assert self.weight_name == other.weight_name, \
+            'different weight names'
+        assert self.shape[1] == other.shape[1], \
+            'different df columns'
+        assert self.weights.shape == other.weights.shape, \
+            'weight shapes are different'
+        new_weights = np.concatenate([self.weights, other.weights])
+        new_df = pd.concat([self.df, other.df])
+        new_files = self.files + other.files
+        new_ds = dataset(new_files, self.name, self.weight_name)
+        new_ds._set_df_and_weights(new_df, new_weights)
+        return new_ds
+
+    def append(self, other: 'dataset') -> None:
+        """Append a dataset to an exiting one
+
+        We perform concatenations of the dataframes and weights to
+        update the existing datasets payload.
+
+        Parameters
+        ----------
+        other : twanaet.data.dataset
+          The dataset to append
+
+        """
+        assert self.is_constructed, \
+            'Unconstructed df (self)'
+        assert other.is_constructed, \
+            'Unconstructed df (other)'
+        assert self.weight_name == other.weight_name, \
+            'different weight names'
+        assert self.shape[1] == other.shape[1], \
+            'different df columns'
+        assert self.weights.shape == other.weights.shape, \
+            'weight shapes are different'
+        self._df = pd.concat([self._df, other.df])
+        self._weights = np.concatenate([self._weights, other.weights])
+        self.files = self.files + other.files
+        self.constructed = True
 
 
 class root_dataset(dataset):
@@ -97,7 +174,7 @@ class root_dataset(dataset):
                  weight_name: str = 'weight_nominal',
                  branches: List[str] = None,
                  select: Dict = None,
-                 construct: bool = False) -> None:
+                 force_construct: bool = False) -> None:
         """Create a ROOT dataset
 
         Parameters
@@ -144,9 +221,8 @@ class root_dataset(dataset):
         self._selection = select
         self._weights = None
         self._df = None
-        if construct:
-            construct(self)
-        self.constructed = construct
+        if force_construct:
+            self.construct()
 
     def construct(self) -> None:
         """Construct the payload from the ROOT files"""
@@ -164,6 +240,7 @@ class root_dataset(dataset):
             frame_list.append(raw_f[isel])
         self._weights = np.concatenate(weight_list)
         self._df = pd.concat(frame_list)
+        self.constructed = True
 
 
 class h5_dataset(dataset):
@@ -176,7 +253,7 @@ class h5_dataset(dataset):
 
     def __init__(self, files: List[str], name: str = '',
                  weight_name: str = 'weight_nominal',
-                 construct: bool = False) -> None:
+                 force_construct: bool = False) -> None:
         """
         Create an h5 dataset
 
@@ -193,9 +270,8 @@ class h5_dataset(dataset):
         """
         super().__init__(self, files, name=name, weight_name=weight_name)
 
-        if construct:
-            construct(self)
-        self.constructed = construct
+        if force_construct:
+            self.construct()
 
     def construct(self) -> None:
         """Construct the payload from the h5 files"""

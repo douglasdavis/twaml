@@ -1,4 +1,5 @@
 import sys
+import pandas as pd
 import numpy as np
 try:
     import twanet.data
@@ -33,3 +34,15 @@ def test_weight():
     raw = raw * 150.0
     ds.weights = ds.weights * 150.0
     np.testing.assert_array_almost_equal(raw, ds.weights, 6)
+
+
+def test_add():
+    ds2 = twanet.data.root_dataset(['tests/data/test_file.root'], name='ds2',
+                                   branches=branches, force_construct=True)
+    ds2.weights = ds2.weights * 22
+    combined = ds + ds2
+    comb_w = np.concatenate([ds.weights, ds2.weights])
+    comb_df = pd.concat([ds.df, ds2.df])
+    np.testing.assert_array_almost_equal(comb_w, combined.weights, 5)
+    np.testing.assert_array_almost_equal(comb_df.get_values(),
+                                         combined.df.get_values(), 5)
