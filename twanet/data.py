@@ -75,12 +75,19 @@ class dataset:
         self._weights = new
 
     @property
-    def label(self) -> int:
+    def label(self) -> Optional[int]:
         return self._label
 
     @label.setter
-    def label(self, new: int) ->None:
+    def label(self, new: int) -> None:
         self._label = new
+
+    @property
+    def label_array(self) -> Optional[np.ndarray]:
+        if self._label is not None:
+            return np.ones((len(self._weights)), dtype=np.int64) * self._label
+        else:
+            return None
 
     @property
     def is_constructed(self) -> bool:

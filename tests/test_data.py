@@ -64,3 +64,14 @@ def test_append():
     np.testing.assert_array_almost_equal(comb_w, ds1.weights, 5)
     np.testing.assert_array_almost_equal(comb_df.get_values(),
                                          ds1.df.get_values(), 5)
+
+
+def test_label():
+    ds2 = twanet.data.root_dataset(['tests/data/test_file.root'], name='ds2',
+                                   branches=branches, force_construct=True)
+    assert ds2.label is None
+    assert ds2.label_array is None
+    ds2.label = 6
+    la = ds2.label_array
+    la_raw = np.ones((ds2.weights.shape[0]), dtype=np.int64) * 6
+    np.testing.assert_array_equal(la, la_raw)
