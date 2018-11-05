@@ -5,16 +5,16 @@ import numpy as np
 
 def compare_distributions(dist1, dist2, bins: Optional[np.ndarray] = None,
                           titles: List[str] = ['dist1', 'dist2'],
-                          colors: List[str] = ['C0','C1'], ratio: bool = True,
+                          colors: List[str] = ['C0', 'C1'], ratio: bool = True,
                           **subplots_kw):
     """Compare two histogrammed distributons with matplotlib
 
     Parameters
     ----------
     dist1
-      Any matplotlib-histogrammable object (``np.ndarray``, ``pd.Series``, etc.)
+      Any mpl-histogrammable object (``np.ndarray``, ``pd.Series``, etc.)
     dist2
-      Any matplotlib-histogrammable object (``np.ndarray``, ``pd.Series``, etc.)
+      Any mpl-histogrammable object (``np.ndarray``, ``pd.Series``, etc.)
     bins: np.ndarray
       Define the bin edges
     titles: List[str]
@@ -40,15 +40,15 @@ def compare_distributions(dist1, dist2, bins: Optional[np.ndarray] = None,
     """
     if ratio:
         fig, ax = plt.subplots(2, 1, sharex=True,
-                                       gridspec_kw=dict(
-                                           height_ratios=[3, 1], hspace=.025
-                                       ), **subplots_kw)
+                               gridspec_kw=dict(
+                                   height_ratios=[3, 1], hspace=.025
+                               ), **subplots_kw)
         h1 = ax[0].hist(dist1, bins=bins,  histtype='step', label=titles[0],
                         color=colors[0])
         h2 = ax[0].hist(dist2, bins=h1[1], histtype='step', label=titles[1],
                         color=colors[1])
         centers = np.delete(h1[1], [0])-(np.ediff1d(h1[1])/2.0)
-        ax[1].plot(centers, h1[0]/h2[0],'k-')
+        ax[1].plot(centers, h1[0]/h2[0], 'k-')
         ax[1].plot([centers[0] - 10e3, centers[1] + 10e3], np.ones(2), 'k--')
         ax[1].set_ylim([0, 2])
         ax[1].set_xlim([h1[1][0], h1[1][-1]])

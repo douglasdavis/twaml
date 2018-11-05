@@ -163,10 +163,26 @@ class dataset:
         self.files = self.files + other.files
         self.constructed = True
 
+    def to_h5(self, file_name) -> None:
+        """Write payload to disk as an h5 file with strict options
+
+        The key in the file is the name of the dataset. The weights
+        array is stored as a separate frame with the key being the
+        weight_name attribute.
+
+        Parameters
+        ----------
+        file_name : str
+          output file name,
+
+        """
+        weights_frame = pd.DataFrame(dict(weights=self._weights))
+        self._df.to_hdf(file_name, self.name, mode='w')
+        weights_frame.to_hdf(file_name, self.weight_name, mode='a')
+
 
 class root_dataset(dataset):
-    """
-    A ROOT specific dataset
+    """A ROOT specific dataset
 
     Attributes
     ----------
@@ -181,6 +197,7 @@ class root_dataset(dataset):
                  weight_name: str = 'weight_nominal',
                  branches: List[str] = None,
                  select: Dict = None,
+                 label: Optional[int] = None,
                  force_construct: bool = False) -> None:
         """Create a ROOT dataset
 
@@ -218,7 +235,8 @@ class root_dataset(dataset):
 
         """
 
-        super().__init__(files, name=name, weight_name=weight_name)
+        super().__init__(files, name=name,
+                         weight_name=weight_name, label=label)
 
         self.tree_name = tree_name
         self.weight_name = weight_name
@@ -258,8 +276,9 @@ class h5_dataset(dataset):
     ----------
     """
 
-    def __init__(self, files: List[str], name: str = '',
+    def __init__(self, file_name: str, name: str = '',
                  weight_name: str = 'weight_nominal',
+                 label: Optional[int] = None,
                  force_construct: bool = False) -> None:
         """
         Create an h5 dataset
@@ -275,11 +294,15 @@ class h5_dataset(dataset):
         construct: bool
           Force construction (normally lazily constructed)
         """
-        super().__init__(self, files, name=name, weight_name=weight_name)
+        super().__init__([file_name], name=name, label=label,
+                         weight_name=weight_name)
 
         if force_construct:
             self.construct()
 
     def construct(self) -> None:
         """Construct the payload from the h5 files"""
-        raise NotImplementedError
+        main_frame = pd.read_hdf(self.files[0], self.name)
+        main_weight_frame = pd.read_hdf(self.files[0], self.weight_name)
+        w_array = main_weight_frame.weights.values
+        self._set_df_and_weights(main_frame, w_array)
