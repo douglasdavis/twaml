@@ -46,3 +46,21 @@ def test_add():
     np.testing.assert_array_almost_equal(comb_w, combined.weights, 5)
     np.testing.assert_array_almost_equal(comb_df.get_values(),
                                          combined.df.get_values(), 5)
+
+
+def test_append():
+    branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
+    ds1 = twanet.data.root_dataset(['tests/data/test_file.root'], name='myds',
+                                   branches=branches, force_construct=True)
+    ds2 = twanet.data.root_dataset(['tests/data/test_file.root'], name='ds2',
+                                   branches=branches, force_construct=True)
+    ds2.weights = ds2.weights * 5
+    # raw
+    comb_w = np.concatenate([ds1.weights, ds2.weights])
+    comb_df = pd.concat([ds1.df, ds2.df])
+    # appended
+    ds1.append(ds2)
+    # now test
+    np.testing.assert_array_almost_equal(comb_w, ds1.weights, 5)
+    np.testing.assert_array_almost_equal(comb_df.get_values(),
+                                         ds1.df.get_values(), 5)
