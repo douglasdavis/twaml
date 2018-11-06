@@ -242,7 +242,7 @@ class root_dataset(dataset):
         Example with a single file and two branches:
 
         >>> ds = root_dataset(['file.root'], name='myds',
-                              branches=['pT_lep1', 'pT_lep2'])
+        ...                   branches=['pT_lep1', 'pT_lep2'])
 
         Example with multiple files and a selection (uses all
         branches). The selection requires the branch ``nbjets == 1``
@@ -250,7 +250,7 @@ class root_dataset(dataset):
 
         >>> flist = ['file1.root', 'file2.root', 'file3.root']
         >>> ds = root_dataset(flist, select={'nbjets': (np.equal, 1),
-                                             'njets': (np.greater, 1)}
+        ...                                  'njets': (np.greater, 1)}
 
         """
 
