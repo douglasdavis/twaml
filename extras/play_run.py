@@ -2,6 +2,7 @@ from twanet.data import root_dataset, h5_dataset
 from twanet.utils import BRANCHES_2j2b, SD_2j2b
 import numpy as np
 
+
 def create_root_datasets() -> None:
     ttbar_files = [
         'ttbar_410472_FS_MC16a_nominal.root',
@@ -22,7 +23,7 @@ def create_root_datasets() -> None:
     ]
 
     def prepend_base(flist):
-        base_dir = '/var/phy/project/hep/atlas/users/drd25/top/analysis/run/all/wtnup/nominal'
+        base_dir = '/data/sgtop/v25_WtProcessed'
         fl = ['{}/{}'.format(base_dir, f) for f in flist]
         return fl
 
@@ -46,6 +47,7 @@ def create_root_datasets() -> None:
 
     return ttbar_rds, tW_DR_rds, tW_DS_rds
 
+
 def read_h5_datasets():
     ttbar_ds = h5_dataset('ttbar.h5', name='ttbar',
                           label=0, force_construct=True)
@@ -58,15 +60,7 @@ def read_h5_datasets():
 
 
 def main():
-    ttbar_rds, tW_DR_rds, tW_DS_rds = create_root_datasets()
     ttbar_hds, tW_DR_hds, tW_DS_hds = read_h5_datasets()
-
-    print(tW_DR_rds.weights)
-    print(tW_DR_hds.weights)
-
-    np.testing.assert_array_almost_equal(ttbar_rds.df.values,
-                                         ttbar_hds.df.values,
-                                         5)
 
 
 if __name__ == '__main__':
