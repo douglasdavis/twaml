@@ -112,6 +112,23 @@ class dataset:
         """Not implemented for base class"""
         raise NotImplementedError
 
+    @staticmethod
+    def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:
+        """Scale the weights of `to_update` such that the sum of weights is
+        equal to the sum of weights of `reference`.
+
+        Paramters
+        ---------
+        to_update : twanet.data.dataset
+            dataset with weights to be scaled
+        reference : twanet.data.dataset
+            dataset to scale to
+
+        """
+        sum_to_update = to_update.weights.sum()
+        sum_reference = reference.weights.sum()
+        to_update.weights *= (sum_reference/sum_to_update)
+
     def __add__(self, other: 'dataset') -> 'dataset':
         """Add to datasets together
 
@@ -224,14 +241,16 @@ class root_dataset(dataset):
         --------
         Example with a single file and two branches:
 
-        >>> ds = root_dataset(['file.root'], name='myds', branches=['pT_lep1', 'pT_lep2'])
+        >>> ds = root_dataset(['file.root'], name='myds',
+                              branches=['pT_lep1', 'pT_lep2'])
 
         Example with multiple files and a selection (uses all
         branches). The selection requires the branch ``nbjets == 1``
         and ``njets >= 1``.
 
         >>> flist = ['file1.root', 'file2.root', 'file3.root']
-        >>> ds = root_dataset(flist, select={'nbjets': (np.equal, 1), 'njets': (np.greater, 1)}
+        >>> ds = root_dataset(flist, select={'nbjets': (np.equal, 1),
+                                             'njets': (np.greater, 1)}
 
         """
 

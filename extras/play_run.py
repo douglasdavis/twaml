@@ -3,7 +3,7 @@ from twanet.utils import BRANCHES_2j2b, SD_2j2b
 import numpy as np
 
 
-def create_root_datasets() -> None:
+def create_root_datasets():
     ttbar_files = [
         'ttbar_410472_FS_MC16a_nominal.root',
         'ttbar_410472_FS_MC16d_nominal.root'
@@ -54,13 +54,13 @@ def read_h5_datasets():
     tW_DR_ds = h5_dataset('tW_DR.h5', name='tW_DR',
                           label=0, force_construct=True)
     tW_DS_ds = h5_dataset('tW_DS.h5', name='tW_DS',
-                          label=0, force_construct=True)
+                          label=1, force_construct=True)
 
     return ttbar_ds, tW_DR_ds, tW_DS_ds
 
 
 def main():
-    ttbar_hds, tW_DR_hds, tW_DS_hds = read_h5_datasets()
+    pass
 
 
 if __name__ == '__main__':
