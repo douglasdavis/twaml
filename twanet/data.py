@@ -117,8 +117,8 @@ class dataset:
         """Scale the weights of `to_update` such that the sum of weights is
         equal to the sum of weights of `reference`.
 
-        Paramters
-        ---------
+        Parameters
+        ----------
         to_update : twanet.data.dataset
             dataset with weights to be scaled
         reference : twanet.data.dataset
