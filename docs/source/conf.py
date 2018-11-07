@@ -15,19 +15,19 @@
 import os
 import sys
 try:
-    import twanet.version
+    import twaml.version
 except ImportError:
     sys.path.insert(0, os.path.abspath('../..'))
-    import twanet.version
+    import twaml.version
 
 # -- Project information -----------------------------------------------------
 
-project = 'twanet'
+project = 'twaml'
 copyright = '2018, Doug Davis'
 author = 'Doug Davis'
 
 # The short X.Y version
-version = str(twanet.version.version)
+version = str(twaml.version.version)
 # The full version, including alpha/beta/rc tags
 release = ''
 
@@ -110,7 +110,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'twanetdoc'
+htmlhelp_basename = 'twamldoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -137,7 +137,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'twanet.tex', 'twanet Documentation',
+    (master_doc, 'twaml.tex', 'twaml Documentation',
      'Doug Davis', 'manual'),
 ]
 
@@ -147,7 +147,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'twanet', 'twanet Documentation',
+    (master_doc, 'twaml', 'twaml Documentation',
      [author], 1)
 ]
 
@@ -158,8 +158,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'twanet', 'twanet Documentation',
-     author, 'twanet', 'One line description of project.',
+    (master_doc, 'twaml', 'twaml Documentation',
+     author, 'twaml', 'One line description of project.',
      'Miscellaneous'),
 ]
 

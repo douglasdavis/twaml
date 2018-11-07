@@ -1,5 +1,5 @@
-from twanet.data import root_dataset, h5_dataset
-from twanet.utils import BRANCHES_2j2b, SD_2j2b
+from twaml.data import root_dataset, h5_dataset
+from twaml.utils import BRANCHES_2j2b, SD_2j2b
 import numpy as np
 
 

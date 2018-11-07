@@ -5,12 +5,12 @@ import os
 
 def get_version():
     g = {}
-    exec(open(os.path.join('twanet', 'version.py')).read(), g)
+    exec(open(os.path.join('twaml', 'version.py')).read(), g)
     return g['__version__']
 
 
 setup(
-    name='twanet',
+    name='twaml',
     version=get_version(),
     scripts=[],
     packages=find_packages(exclude=['tests']),

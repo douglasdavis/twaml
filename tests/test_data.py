@@ -2,14 +2,14 @@ import sys
 import pandas as pd
 import numpy as np
 try:
-    import twanet.data
+    import twaml.data
 except ImportError:
     sys.path.append('.')
-    import twanet.data
+    import twaml.data
 
 branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
-ds = twanet.data.root_dataset(['tests/data/test_file.root'], name='myds',
-                              branches=branches)
+ds = twaml.data.root_dataset(['tests/data/test_file.root'], name='myds',
+                             branches=branches)
 ds.construct()
 
 
@@ -37,8 +37,8 @@ def test_weight():
 
 
 def test_add():
-    ds2 = twanet.data.root_dataset(['tests/data/test_file.root'], name='ds2',
-                                   branches=branches, force_construct=True)
+    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
+                                  branches=branches, force_construct=True)
     ds2.weights = ds2.weights * 22
     combined = ds + ds2
     comb_w = np.concatenate([ds.weights, ds2.weights])
@@ -50,10 +50,10 @@ def test_add():
 
 def test_append():
     branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
-    ds1 = twanet.data.root_dataset(['tests/data/test_file.root'], name='myds',
-                                   branches=branches, force_construct=True)
-    ds2 = twanet.data.root_dataset(['tests/data/test_file.root'], name='ds2',
-                                   branches=branches, force_construct=True)
+    ds1 = twaml.data.root_dataset(['tests/data/test_file.root'], name='myds',
+                                  branches=branches, force_construct=True)
+    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
+                                  branches=branches, force_construct=True)
     ds2.weights = ds2.weights * 5
     # raw
     comb_w = np.concatenate([ds1.weights, ds2.weights])
@@ -67,8 +67,8 @@ def test_append():
 
 
 def test_label():
-    ds2 = twanet.data.root_dataset(['tests/data/test_file.root'], name='ds2',
-                                   branches=branches, force_construct=True)
+    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
+                                  branches=branches, force_construct=True)
     assert ds2.label is None
     assert ds2.label_array is None
     ds2.label = 6

@@ -1,11 +1,11 @@
-``twanet.viz``
-==============
+``twaml.viz``
+=============
 
 The ``viz`` module provides visualization tools
 
 
-.. ``twanet.viz``
-.. --------------
+.. ``twaml.viz``
+.. -------------
 
-.. automodule:: twanet.viz
+.. automodule:: twaml.viz
    :members:

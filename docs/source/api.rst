@@ -1,7 +1,7 @@
 API Reference
 =============
 
-.. automodule:: twanet
+.. automodule:: twaml
    :no-members:
    :no-inherited-members:
 
