@@ -185,11 +185,13 @@ epub_exclude_files = ['search.html']
 # -- Extension configuration -------------------------------------------------
 
 autodoc_mock_imports = [
-    "keras",
-    "torch",
-    "uproot",
-    "tables",
-    "tensorflow"
+    'keras',
+    'torch',
+    'uproot',
+    'tables',
+    'tensorflow',
+    'pandas',
+    'matplotlib'
 ]
 
 autoclass_content = 'both'
