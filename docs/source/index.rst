@@ -10,7 +10,7 @@
    tests.rst
    api.rst
 
-.. include:: front.rst
+.. mdinclude:: ../../README.md
 
 .. Indices and tables
 .. ==================

@@ -73,5 +73,5 @@ def test_label():
     assert ds2.label_array is None
     ds2.label = 6
     la = ds2.label_array
-    la_raw = np.ones((ds2.weights.shape[0]), dtype=np.int64) * 6
+    la_raw = np.ones_like(ds2.weights, dtype=np.int64) * 6
     np.testing.assert_array_equal(la, la_raw)

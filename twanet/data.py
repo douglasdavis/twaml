@@ -41,6 +41,8 @@ class dataset:
           Name of the dataset (if none use first file name)
         weight_name: str
           Name of the weight branch
+        label: Optional[int]
+          Give dataset an integer based label
 
         """
         self._weights = None
@@ -84,8 +86,8 @@ class dataset:
 
     @property
     def label_array(self) -> Optional[np.ndarray]:
-        if self._label is not None:
-            return np.ones((len(self._weights)), dtype=np.int64) * self._label
+        if self.label is not None:
+            return np.ones_like(self.weights, dtype=np.int64) * self.label
         else:
             return None
 
@@ -234,15 +236,18 @@ class root_dataset(dataset):
           A dictionary of selections to apply of the form:
           ``{branch_name: (numpy.ufunc, test_value)}``. the
           selections are combined using ``np.logical_and``
-        construct: bool
+        label: Optional[int]
+          Give the dataset an integer label
+        force_construct: bool
           Force construction (normally lazily constructed)
 
         Examples
         --------
         Example with a single file and two branches:
 
-        >>> ds = root_dataset(['file.root'], name='myds',
-        ...                   branches=['pT_lep1', 'pT_lep2'])
+        >>> ds1 = root_dataset(['file.root'], name='myds',
+        ...                    branches=['pT_lep1', 'pT_lep2'],
+        ...                    label=1, force_construct=True)
 
         Example with multiple files and a selection (uses all
         branches). The selection requires the branch ``nbjets == 1``
@@ -251,6 +256,8 @@ class root_dataset(dataset):
         >>> flist = ['file1.root', 'file2.root', 'file3.root']
         >>> ds = root_dataset(flist, select={'nbjets': (np.equal, 1),
         ...                                  'njets': (np.greater, 1)}
+        >>> ds.construct() ## construct
+        >>> ds.label = 2 ## add label after the fact
 
         """
 
@@ -289,10 +296,7 @@ class root_dataset(dataset):
 
 class h5_dataset(dataset):
     """
-    h5 dataset
-
-    Attributes
-    ----------
+    Dataset constructed from existing h5 files
     """
 
     def __init__(self, file_name: str, name: str = '',
@@ -304,14 +308,25 @@ class h5_dataset(dataset):
 
         Parameters
         ----------
-        files: List[str]
-          List of h5 files to use
+        file_name: str
+          Name of h5 file containing the payload
         name: str
-          Name of the dataset (if none use first file name)
+          Name of the dataset inside the h5 file
         weight_name: str
-          Name of the weight branch
-        construct: bool
+          Name of the weight array inside the h5 file
+        label: Optional[int]
+          Give the dataset an integer label
+        force_construct: bool
           Force construction (normally lazily constructed)
+
+        Examples
+        --------
+
+        >>> ds1 = h5_dataset('ttbar.h5', name='ttbar', force_construct=True)
+        >>> ds1.label = 1 ## add label to constructed dataset
+        >>> ds2 = h5_dataset('tW_DR.h5', name='tW_DR', label=2)
+        >>> ds2.construct() ## construct already labeled dataset
+
         """
         super().__init__([file_name], name=name, label=label,
                          weight_name=weight_name)
