@@ -1,2 +1,4 @@
 *.h5
 *.root
+*.ipynb_checkpoints
+*.pdf
