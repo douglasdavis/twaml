@@ -5,4 +5,5 @@
 [![Documentation Status](https://readthedocs.org/projects/twaml/badge/?version=latest)](https://twaml.readthedocs.io/en/latest/?badge=latest)
 
 You've found `twaml`: python tooling for machine learning in the ATLAS
-Run II tW Analysis.
+Run II tW Analysis. Documentation is hosted at
+[RTD](https://readthedocs.org/), click the badge you see above.
