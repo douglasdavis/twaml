@@ -12,6 +12,10 @@ def get_version():
     return g['__version__']
 
 
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
+
+
 setup(
     name='twaml',
     version=get_version(),
@@ -24,10 +28,7 @@ setup(
     license='MIT',
     url="https://github.com/drdavis/twaml",
     test_suite="tests",
-    install_requires=["uproot>=3.0",
-                      "matplotlib",
-                      "pandas",
-                      "scikit-learn>=0.20"],
+    install_requires=requirements,
     tests_require=["pytest>=3.9"],
     classifiers=[
         "Intended Audience :: Science/Research",
