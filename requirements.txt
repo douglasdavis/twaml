@@ -1,0 +1,4 @@
+uproot>=3.0
+matplotlib
+pandas
+scikit-learn>=0.20

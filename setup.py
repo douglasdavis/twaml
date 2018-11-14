@@ -17,5 +17,16 @@ setup(
     description='tW Analysis (Neural) Network(s)',
     author='Doug Davis',
     author_email='ddavis@cern.ch',
-    license='MIT'
+    license='MIT',
+    url="https://github.com/drdavis/twaml",
+    test_suite="tests",
+    install_requires=["uproot>=3.0",
+                      "matplotlib",
+                      "pandas",
+                      "scikit-learn>=0.20"],
+    tests_require=["pytest>=3.9"],
+    classifiers=[
+        "Indended Audience :: Science/Research",
+        "Programming Language :: Python :: 3.6"
+    ]
 )

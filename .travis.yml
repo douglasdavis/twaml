@@ -1,10 +1,47 @@
+dist: xenial
+
 language: python
+
 cache: pip
-python:
-  - "3.6"
+
+os:
+  - linux
+
+env:
+  - CONDA_PYTHON_VERSION=3.6 UPROOT="uproot>=3.0"
+  - CONDA_PYTHON_VERSION=3.7 UPROOT="uproot>=3.0"
+
 install:
-  - pip install --upgrade pip
-  - pip install uproot pandas pytest matplotlib
-  - pip install -U -q -e .
+  - wget -nv http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - if [ "${CONDA_PYTHON_VERION}" = "2.7" ] || [ "${CONDA_PYTHON_VERION}" = "3.6" ] || [ "${CONDA_PYTHON_VERION}" = "3.7" ]; then
+      conda config --add channels conda-forge/label/gcc7;
+      conda config --add channels chrisburr;
+      conda create -q -n testenv python=${CONDA_PYTHON_VERION} nomkl root;
+    else
+      conda config --add channels conda-forge;
+      conda create -q -n testenv python=${CONDA_PYTHON_VERION};
+    fi
+  - source activate testenv
+  - pip install --upgrade setuptools_scm
+  - pip install $UPROOT
+  - python -c 'import numpy; print(numpy.__version__)'
+  - pip install awkward
+  - python -c 'import awkward; print(awkward.__version__)'
+  - pip install "uproot-methods>=0.2.0"
+  - python -c 'import uproot_methods; print(uproot_methods.__version__)'
+  - pip install "pytest>=3.9" pytest-runner
+
+addons:
+  apt:
+    packages:
+      - python-setuptools
+
 script:
-  - pytest
+  - python setup.py pytest
+
+stages:
+  - test
