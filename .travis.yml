@@ -17,13 +17,13 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
-  - if [ "${CONDA_PYTHON_VERION}" = "2.7" ] || [ "${CONDA_PYTHON_VERION}" = "3.6" ] || [ "${CONDA_PYTHON_VERION}" = "3.7" ]; then
+  - if [ "${CONDA_PYTHON_VERSION}" = "2.7" ] || [ "${CONDA_PYTHON_VERSION}" = "3.6" ] || [ "${CONDA_PYTHON_VERSION}" = "3.7" ]; then
       conda config --add channels conda-forge/label/gcc7;
       conda config --add channels chrisburr;
-      conda create -q -n testenv python=${CONDA_PYTHON_VERION} nomkl root;
+      conda create -q -n testenv python=${CONDA_PYTHON_VERSION} nomkl root;
     else
       conda config --add channels conda-forge;
-      conda create -q -n testenv python=${CONDA_PYTHON_VERION};
+      conda create -q -n testenv python=${CONDA_PYTHON_VERSION};
     fi
   - source activate testenv
   - pip install --upgrade setuptools_scm
