@@ -75,3 +75,15 @@ def test_label():
     la = ds2.label_array
     la_raw = np.ones_like(ds2.weights, dtype=np.int64) * 6
     np.testing.assert_array_equal(la, la_raw)
+
+
+def test_save_and_read():
+    ds.to_h5('outfile.h5')
+    new_ds = twaml.data.h5_dataset('outfile.h5', name=ds.name,
+                                   force_construct=True)
+    X1 = ds.df.values
+    X2 = new_ds.df.values
+    w1 = ds.weights
+    w2 = new_ds.weights
+    np.testing.assert_array_almost_equal(X1, X2, 6)
+    np.testing.assert_array_almost_equal(w1, w2, 6)

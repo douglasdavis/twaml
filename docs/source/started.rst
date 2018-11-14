@@ -9,18 +9,17 @@ It is highy recommended to use the `Anaconda
 
 The bare requirements for data handling, plotting, and testing include:
 
-- numpy
-- uproot
+- uproot (>=3.0 tested)
 - pandas
-- scikit-learn
+- scikit-learn (>=0.20 tested)
 - matplotlib
 - h5py
 - pytables
 - pytest
 
-Since twaml is in an early development stage specific versions are not
-listed and tests are run with the latest available installation from
-PyPI or Anaconda/conda-forge.
+Since twaml is in an early development stage specific versions may
+change.  listed and tests are run with the latest available
+installation from PyPI or Anaconda/conda-forge.
 
 For training and testing models
 
