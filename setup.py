@@ -32,6 +32,6 @@ setup(
     tests_require=["pytest>=3.9"],
     classifiers=[
         "Intended Audience :: Science/Research",
-        "Programming Language :: Python :: 3.6"
+        "Programming Language :: Python :: 3.6",
     ]
 )
