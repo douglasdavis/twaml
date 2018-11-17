@@ -1,0 +1,21 @@
+image: archlinux
+packages:
+  - python
+  - python-pip
+  - python-matplotlib
+  - python-numpy
+  - python-pandas
+  - python-pytables
+  - python-h5py
+  - python-pytest
+  - python-lz4
+  - hdf5
+sources:
+  - https://git.sr.ht/~ddavis/twaml
+tasks:
+  - setup: |
+      sudo pip install uproot
+  - build: |
+      pwd
+      cd twaml
+      pytest
