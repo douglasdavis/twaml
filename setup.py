@@ -21,7 +21,7 @@ setup(
     version=get_version(),
     scripts=[],
     packages=find_packages(exclude=['tests']),
-    description='tW Analysis (Neural) Network(s)',
+    description='tW Analysis Machine Learning',
     long_description=LD,
     author='Doug Davis',
     author_email='ddavis@cern.ch',
