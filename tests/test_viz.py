@@ -1,3 +1,5 @@
+import matplotlib as mpl
+mpl.use('Agg')
 import sys
 import numpy as np
 try:
@@ -14,9 +16,10 @@ def test_compare_dist():
     nh1 = np.histogram(d1,bins=bins)
     nh2 = np.histogram(d2,bins=bins)
     fig, ax, h1, h2 = twaml.viz.compare_distributions(d1, d2, bins=bins,
-                                                      colors=['red','green'])
+                                                      colors=['red', 'green'])
     np.testing.assert_array_equal(nh1[0], h1[0])
     np.testing.assert_array_equal(nh2[0], h2[0])
+    fig.savefig('test.pdf')
 
     d1 = np.random.randn(1000)
     d2 = np.random.randn(1000)
