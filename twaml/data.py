@@ -2,7 +2,7 @@ import uproot
 import pandas as pd
 import numpy as np
 from pathlib import PosixPath
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Union
 
 
 class dataset:
@@ -27,7 +27,7 @@ class dataset:
 
     """
 
-    def __init__(self, files: List[str], name: str = '',
+    def __init__(self, files: Union[str, List[str]], name: str = '',
                  weight_name: str = 'weight_nominal',
                  label: Optional[int] = None) -> None:
         """
@@ -35,7 +35,7 @@ class dataset:
 
         Parameters
         ----------
-        files: List[str]
+        files: Union[str,List[str]]
           List of ROOT files to use
         name: str
           Name of the dataset (if none use first file name)
@@ -47,9 +47,12 @@ class dataset:
         """
         self._weights = None
         self._df = None
-        self.files = [PosixPath(f) for f in files]
+        if type(files) is list:
+            self.files = [PosixPath(f) for f in files]
+        elif type(files) is str:
+            self.files = [PosixPath(files)]
         for f in self.files:
-            assert f.exists()
+            assert f.exists(), '{} does not exist'.format(f)
         if not name:
             self.name = files[0]
         else:
@@ -268,7 +271,7 @@ class root_dataset(dataset):
         self.weight_name = weight_name
         self.branches = branches
         self.uproot_trees = [uproot.open(file_name)[tree_name]
-                             for file_name in files]
+                             for file_name in self.files]
         self._selection = select
         self._weights = None
         self._df = None
@@ -328,7 +331,7 @@ class h5_dataset(dataset):
         >>> ds2.construct() ## construct already labeled dataset
 
         """
-        super().__init__([file_name], name=name, label=label,
+        super().__init__(file_name, name=name, label=label,
                          weight_name=weight_name)
 
         if force_construct:
