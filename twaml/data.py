@@ -2,7 +2,7 @@ import uproot
 import pandas as pd
 import numpy as np
 from pathlib import PosixPath
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Tuple, Optional
 
 
 class dataset:
@@ -27,7 +27,7 @@ class dataset:
 
     """
 
-    def __init__(self, files: Union[str, List[str]], name: str = '',
+    def __init__(self, input_files: List[str], name: str = '',
                  weight_name: str = 'weight_nominal',
                  label: Optional[int] = None) -> None:
         """
@@ -35,8 +35,8 @@ class dataset:
 
         Parameters
         ----------
-        files: Union[str,List[str]]
-          List of ROOT files to use
+        input_files: Union[List[str], str]
+          List of input files
         name: str
           Name of the dataset (if none use first file name)
         weight_name: str
@@ -45,16 +45,13 @@ class dataset:
           Give dataset an integer based label
 
         """
-        self._weights = None
-        self._df = None
-        if type(files) is list:
-            self.files = [PosixPath(f) for f in files]
-        elif type(files) is str:
-            self.files = [PosixPath(files)]
+        self._weights = np.array([])
+        self._df = pd.DataFrame({})
+        self.files = [PosixPath(f) for f in input_files]
         for f in self.files:
             assert f.exists(), '{} does not exist'.format(f)
         if not name:
-            self.name = files[0]
+            self.name = str(self.files[0])
         else:
             self.name = name
         self.weight_name = weight_name
@@ -75,7 +72,7 @@ class dataset:
         return self._weights
 
     @weights.setter
-    def weights(self, new) -> None:
+    def weights(self, new: np.ndarray) -> None:
         assert len(new) == len(self._df), 'weight length != frame length'
         self._weights = new
 
@@ -117,23 +114,6 @@ class dataset:
         """Not implemented for base class"""
         raise NotImplementedError
 
-    @staticmethod
-    def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:
-        """Scale the weights of `to_update` such that the sum of weights is
-        equal to the sum of weights of `reference`.
-
-        Parameters
-        ----------
-        to_update : twanet.data.dataset
-            dataset with weights to be scaled
-        reference : twanet.data.dataset
-            dataset to scale to
-
-        """
-        sum_to_update = to_update.weights.sum()
-        sum_reference = reference.weights.sum()
-        to_update.weights *= (sum_reference/sum_to_update)
-
     def __add__(self, other: 'dataset') -> 'dataset':
         """Add to datasets together
 
@@ -153,7 +133,7 @@ class dataset:
             'weight shapes are different'
         new_weights = np.concatenate([self.weights, other.weights])
         new_df = pd.concat([self.df, other.df])
-        new_files = self.files + other.files
+        new_files = [str(f) for f in (self.files + other.files)]
         new_ds = dataset(new_files, self.name, self.weight_name)
         new_ds._set_df_and_weights(new_df, new_weights)
         return new_ds
@@ -185,7 +165,7 @@ class dataset:
         self.files = self.files + other.files
         self.constructed = True
 
-    def to_h5(self, file_name) -> None:
+    def to_h5(self, file_name: str) -> None:
         """Write payload to disk as an h5 file with strict options
 
         The key in the file is the name of the dataset. The weights
@@ -202,6 +182,9 @@ class dataset:
         self._df.to_hdf(file_name, self.name, mode='w')
         weights_frame.to_hdf(file_name, self.weight_name, mode='a')
 
+    def __len__(self) -> int:
+        return len(self.weights)
+
 
 class root_dataset(dataset):
     """A ROOT specific dataset
@@ -214,7 +197,7 @@ class root_dataset(dataset):
       The list of branches in the trees to use
     """
 
-    def __init__(self, files: List[str], name: str = '',
+    def __init__(self, input_files: List[str], name: str = '',
                  tree_name: str = 'WtLoop_nominal',
                  weight_name: str = 'weight_nominal',
                  branches: List[str] = None,
@@ -225,8 +208,8 @@ class root_dataset(dataset):
 
         Parameters
         ----------
-        files: List[str]
-          List of ROOT files to use
+        input_files: List[str]
+          List of ROOT input_files to use
         name: str
           Name of the dataset (if none use first file name)
         tree_name: str
@@ -252,7 +235,7 @@ class root_dataset(dataset):
         ...                    branches=['pT_lep1', 'pT_lep2'],
         ...                    label=1, force_construct=True)
 
-        Example with multiple files and a selection (uses all
+        Example with multiple input_files and a selection (uses all
         branches). The selection requires the branch ``nbjets == 1``
         and ``njets >= 1``.
 
@@ -264,7 +247,7 @@ class root_dataset(dataset):
 
         """
 
-        super().__init__(files, name=name,
+        super().__init__(input_files, name=name,
                          weight_name=weight_name, label=label)
 
         self.tree_name = tree_name
@@ -331,7 +314,7 @@ class h5_dataset(dataset):
         >>> ds2.construct() ## construct already labeled dataset
 
         """
-        super().__init__(file_name, name=name, label=label,
+        super().__init__([file_name], name=name, label=label,
                          weight_name=weight_name)
 
         if force_construct:
@@ -343,3 +326,21 @@ class h5_dataset(dataset):
         main_weight_frame = pd.read_hdf(self.files[0], self.weight_name)
         w_array = main_weight_frame.weights.values
         self._set_df_and_weights(main_frame, w_array)
+
+
+def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:
+    """
+    Scale the weights of the `to_update` dataset such that the sum of
+    weights are equal to the sum of weights of `the reference dataset`.
+
+    Parameters
+    ----------
+    to_update : twanet.data.dataset
+        dataset with weights to be scaled
+    reference : twanet.data.dataset
+        dataset to scale to
+
+    """
+    sum_to_update = to_update.weights.sum()
+    sum_reference = reference.weights.sum()
+    to_update.weights *= (sum_reference/sum_to_update)

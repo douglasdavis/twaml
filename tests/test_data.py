@@ -17,12 +17,6 @@ def test_name():
     assert ds.name == 'myds'
 
 
-def test_single_file():
-    ads = twaml.data.root_dataset('tests/data/test_file.root',
-                                  name='name', branches=branches)
-    assert ads.name == 'name'
-
-
 def test_content():
     ts = ds.uproot_trees
     raws = [t.array('pT_lep1') for t in ts]
@@ -93,3 +87,14 @@ def test_save_and_read():
     w2 = new_ds.weights
     np.testing.assert_array_almost_equal(X1, X2, 6)
     np.testing.assert_array_almost_equal(w1, w2, 6)
+
+
+def test_scale_weight_sum():
+    ds1 = twaml.data.root_dataset(['tests/data/test_file.root'], name='myds',
+                                  branches=branches, force_construct=True)
+    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
+                                  branches=branches, force_construct=True)
+    ds2.weights = np.random.randn(len(ds1)) * 10
+    twaml.data.scale_weight_sum(ds1, ds2)
+    testval = abs(1.0 - ds2.weights.sum()/ds1.weights.sum())
+    assert testval < 1.0e-4
