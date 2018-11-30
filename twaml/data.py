@@ -117,7 +117,7 @@ class dataset:
     def __add__(self, other: 'dataset') -> 'dataset':
         """Add to datasets together
 
-        We perform contatenations of the dataframes and weights to
+        We perform concatenations of the dataframes and weights to
         generate a new dataset with a new payload.
 
         """
@@ -331,7 +331,7 @@ class h5_dataset(dataset):
 def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:
     """
     Scale the weights of the `to_update` dataset such that the sum of
-    weights are equal to the sum of weights of `the reference dataset`.
+    weights are equal to the sum of weights of the `reference` dataset.
 
     Parameters
     ----------

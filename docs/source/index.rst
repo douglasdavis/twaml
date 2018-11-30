@@ -7,8 +7,8 @@
    :hidden:
 
    started.rst
-   tests.rst
    api.rst
+   tests.rst
 
 .. mdinclude:: ../../README.md
 
