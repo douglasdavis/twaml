@@ -51,7 +51,7 @@ class dataset:
         for f in self.files:
             assert f.exists(), '{} does not exist'.format(f)
         if name is None:
-            self.name = str(self.files[0])
+            self.name = str(self.files[0].parts[-1])
         else:
             self.name = name
         self.weight_name = weight_name
@@ -197,7 +197,7 @@ class root_dataset(dataset):
       The list of branches in the trees to use
     """
 
-    def __init__(self, input_files: List[str], name: str = '',
+    def __init__(self, input_files: List[str], name: Optional[str] = None,
                  tree_name: str = 'WtLoop_nominal',
                  weight_name: str = 'weight_nominal',
                  branches: List[str] = None,

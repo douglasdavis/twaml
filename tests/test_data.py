@@ -17,6 +17,12 @@ def test_name():
     assert ds.name == 'myds'
 
 
+def test_no_name():
+    dst = twaml.data.root_dataset(['tests/data/test_file.root'],
+                                  branches=branches)
+    assert dst.name == 'test_file.root'
+
+
 def test_content():
     ts = ds.uproot_trees
     raws = [t.array('pT_lep1') for t in ts]
