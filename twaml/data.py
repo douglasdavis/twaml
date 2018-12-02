@@ -27,7 +27,7 @@ class dataset:
 
     """
 
-    def __init__(self, input_files: List[str], name: str = '',
+    def __init__(self, input_files: List[str], name: Optional[str] = None,
                  weight_name: str = 'weight_nominal',
                  label: Optional[int] = None) -> None:
         """
@@ -35,9 +35,9 @@ class dataset:
 
         Parameters
         ----------
-        input_files: Union[List[str], str]
+        input_files: List[str]
           List of input files
-        name: str
+        name: Optional[str]
           Name of the dataset (if none use first file name)
         weight_name: str
           Name of the weight branch
@@ -50,7 +50,7 @@ class dataset:
         self.files = [PosixPath(f) for f in input_files]
         for f in self.files:
             assert f.exists(), '{} does not exist'.format(f)
-        if not name:
+        if name is None:
             self.name = str(self.files[0])
         else:
             self.name = name
