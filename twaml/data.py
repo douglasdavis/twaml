@@ -285,7 +285,7 @@ class h5_dataset(dataset):
     Dataset constructed from existing h5 files
     """
 
-    def __init__(self, file_name: str, name: str = '',
+    def __init__(self, file_name: str, name: str,
                  weight_name: str = 'weight_nominal',
                  label: Optional[int] = None,
                  force_construct: bool = False) -> None:
