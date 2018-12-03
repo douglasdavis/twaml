@@ -12,7 +12,7 @@ class dataset:
 
     Attributes
     ----------
-    files: List[str]
+    files: List[PosixPath]
       List of files delivering the dataset
     name: str
       Name for the dataset

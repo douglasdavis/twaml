@@ -1,11 +1,7 @@
-import sys
+import os
 import pandas as pd
 import numpy as np
-try:
-    import twaml.data
-except ImportError:
-    sys.path.append('.')
-    import twaml.data
+import twaml.data
 
 branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
 ds = twaml.data.root_dataset(['tests/data/test_file.root'], name='myds',
@@ -31,6 +27,12 @@ def test_content():
     n1, bins1 = np.histogram(raw, bins=bins)
     n2, bins2 = np.histogram(ds.df.pT_lep1.values, bins=bins)
     np.testing.assert_array_equal(n1, n2)
+
+
+def test_nothing():
+    dst = twaml.data.root_dataset(['tests/data/test_file.root'],
+                                  branches=branches)
+    assert dst.files[0].exists()
 
 
 def test_weight():
@@ -104,3 +106,8 @@ def test_scale_weight_sum():
     twaml.data.scale_weight_sum(ds1, ds2)
     testval = abs(1.0 - ds2.weights.sum()/ds1.weights.sum())
     assert testval < 1.0e-4
+
+
+def test_cleanup():
+    os.remove('outfile.h5')
+    assert True
