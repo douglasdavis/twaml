@@ -24,6 +24,14 @@ Classes
    :show-inheritance:
    :inherited-members:
 
+``twaml.data.pytables_dataset``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: twaml.data.pytables_dataset
+   :members:
+   :show-inheritance:
+   :inherited-members:
+
 ``twaml.data.h5_dataset``
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 

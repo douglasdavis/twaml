@@ -1,11 +1,13 @@
 import os
 import pandas as pd
 import numpy as np
-import twaml.data
+import h5py
+from twaml.data import root_dataset, h5_dataset, pytables_dataset
+from twaml.data import scale_weight_sum
 
 branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
-ds = twaml.data.root_dataset(['tests/data/test_file.root'], name='myds',
-                             branches=branches)
+ds = root_dataset(['tests/data/test_file.root'], name='myds',
+                  branches=branches)
 ds.construct()
 
 
@@ -14,8 +16,8 @@ def test_name():
 
 
 def test_no_name():
-    dst = twaml.data.root_dataset(['tests/data/test_file.root'],
-                                  branches=branches)
+    dst = root_dataset(['tests/data/test_file.root'],
+                       branches=branches)
     assert dst.name == 'test_file.root'
 
 
@@ -30,8 +32,8 @@ def test_content():
 
 
 def test_nothing():
-    dst = twaml.data.root_dataset(['tests/data/test_file.root'],
-                                  branches=branches)
+    dst = root_dataset(['tests/data/test_file.root'],
+                       branches=branches)
     assert dst.files[0].exists()
 
 
@@ -45,8 +47,8 @@ def test_weight():
 
 
 def test_add():
-    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
-                                  branches=branches, force_construct=True)
+    ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
+                       branches=branches, force_construct=True)
     ds2.weights = ds2.weights * 22
     combined = ds + ds2
     comb_w = np.concatenate([ds.weights, ds2.weights])
@@ -58,10 +60,10 @@ def test_add():
 
 def test_append():
     branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
-    ds1 = twaml.data.root_dataset(['tests/data/test_file.root'], name='myds',
-                                  branches=branches, force_construct=True)
-    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
-                                  branches=branches, force_construct=True)
+    ds1 = root_dataset(['tests/data/test_file.root'], name='myds',
+                       branches=branches, force_construct=True)
+    ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
+                       branches=branches, force_construct=True)
     ds2.weights = ds2.weights * 5
     # raw
     comb_w = np.concatenate([ds1.weights, ds2.weights])
@@ -75,8 +77,8 @@ def test_append():
 
 
 def test_label():
-    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
-                                  branches=branches, force_construct=True)
+    ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
+                       branches=branches, force_construct=True)
     assert ds2.label is None
     assert ds2.label_array is None
     ds2.label = 6
@@ -86,9 +88,9 @@ def test_label():
 
 
 def test_save_and_read():
-    ds.to_h5('outfile.h5')
-    new_ds = twaml.data.h5_dataset('outfile.h5', name=ds.name,
-                                   force_construct=True)
+    ds.to_pytables('outfile.h5')
+    new_ds = pytables_dataset('outfile.h5', name=ds.name,
+                              force_construct=True)
     X1 = ds.df.values
     X2 = new_ds.df.values
     w1 = ds.weights
@@ -97,13 +99,24 @@ def test_save_and_read():
     np.testing.assert_array_almost_equal(w1, w2, 6)
 
 
+def test_raw_h5():
+    inds = h5_dataset('tests/data/raw.h5', 'WtLoop_nominal',
+                      ['pT_jet1', 'nbjets', 'met'])
+    inds.construct()
+    rawf = h5py.File('tests/data/raw.h5')['WtLoop_nominal']
+    raww = rawf['weight_nominal']
+    rawm = rawf['met']
+    np.testing.assert_array_almost_equal(raww, inds.weights, 5)
+    np.testing.assert_array_almost_equal(rawm, inds.df.met, 5)
+
+
 def test_scale_weight_sum():
-    ds1 = twaml.data.root_dataset(['tests/data/test_file.root'], name='myds',
-                                  branches=branches, force_construct=True)
-    ds2 = twaml.data.root_dataset(['tests/data/test_file.root'], name='ds2',
-                                  branches=branches, force_construct=True)
+    ds1 = root_dataset(['tests/data/test_file.root'], name='myds',
+                       branches=branches, force_construct=True)
+    ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
+                       branches=branches, force_construct=True)
     ds2.weights = np.random.randn(len(ds1)) * 10
-    twaml.data.scale_weight_sum(ds1, ds2)
+    scale_weight_sum(ds1, ds2)
     testval = abs(1.0 - ds2.weights.sum()/ds1.weights.sum())
     assert testval < 1.0e-4
 

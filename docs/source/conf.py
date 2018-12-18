@@ -192,7 +192,8 @@ autodoc_mock_imports = [
     'tables',
     'tensorflow',
     'pandas',
-    'matplotlib'
+    'matplotlib',
+    'h5py'
 ]
 
 autoclass_content = 'both'

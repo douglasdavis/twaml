@@ -1,5 +1,6 @@
 import uproot
 import pandas as pd
+import h5py
 import numpy as np
 from pathlib import PosixPath
 from typing import List, Dict, Tuple, Optional
@@ -165,8 +166,8 @@ class dataset:
         self.files = self.files + other.files
         self.constructed = True
 
-    def to_h5(self, file_name: str) -> None:
-        """Write payload to disk as an h5 file with strict options
+    def to_pytables(self, file_name: str) -> None:
+        """Write payload to disk as an pytables h5 file with strict options
 
         The key in the file is the name of the dataset. The weights
         array is stored as a separate frame with the key being the
@@ -280,17 +281,16 @@ class root_dataset(dataset):
         self.constructed = True
 
 
-class h5_dataset(dataset):
+class pytables_dataset(dataset):
     """
-    Dataset constructed from existing h5 files
+    Dataset constructed from existing pytables style h5 files
     """
-
     def __init__(self, file_name: str, name: str,
                  weight_name: str = 'weight_nominal',
                  label: Optional[int] = None,
                  force_construct: bool = False) -> None:
         """
-        Create an h5 dataset
+        Create an h5 dataset from pytables output
 
         Parameters
         ----------
@@ -328,6 +328,50 @@ class h5_dataset(dataset):
         self._set_df_and_weights(main_frame, w_array)
 
 
+class h5_dataset(dataset):
+    """
+    Dataset constructed from existing h5 files
+    """
+    def __init__(self, file_name: str, name: str, columns: List[str],
+                 weight_name: str = 'weight_nominal',
+                 label: Optional[int] = None,
+                 force_construct: bool = False) -> None:
+        """
+        Create an h5 dataset
+
+        Parameters
+        ----------
+        file_name: str
+          Name of h5 file containing the payload
+        name: str
+          Name of the dataset inside the h5 file
+        columns: List[str]
+          Names of columns (branches) to include in payload
+        weight_name: str
+          Name of the weight array inside the h5 file
+        label: Optional[int]
+          Give the dataset an integer label
+        force_construct: bool
+          Force construction (normally lazily constructed)
+        """
+        super().__init__([file_name], name=name, label=label,
+                         weight_name=weight_name)
+        self._columns = columns
+        if force_construct:
+            self.construct()
+
+    def construct(self) -> None:
+        """Construct the payload from the h5 files"""
+        f = h5py.File(self.files[0], mode='r')
+        full_ds = f[self.name]
+        w_array = f[self.name][self.weight_name]
+        coldict = {}
+        for col in self._columns:
+            coldict[col] = full_ds[col]
+        frame = pd.DataFrame(coldict)
+        self._set_df_and_weights(frame, w_array)
+
+
 def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:
     """
     Scale the weights of the `to_update` dataset such that the sum of
@@ -341,6 +385,8 @@ def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:
         dataset to scale to
 
     """
+    assert to_update.constructed, 'to_update is not constructed'
+    assert reference.constructed, 'reference is not constructed'
     sum_to_update = to_update.weights.sum()
     sum_reference = reference.weights.sum()
     to_update.weights *= (sum_reference/sum_to_update)
