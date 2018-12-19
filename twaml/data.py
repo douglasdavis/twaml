@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+
+"""twaml.data module
+
+This module contains classes to abstract datasets using
+pandas.DataFrames as the payload for feeding to machine learning
+frameworks.
+
+"""
+
 import uproot
 import pandas as pd
 import h5py

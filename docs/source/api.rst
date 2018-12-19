@@ -10,3 +10,4 @@ API Reference
 
    api_data.rst
    api_viz.rst
+   api_utils.rst

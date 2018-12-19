@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+"""twaml.viz
+
+A module to aid visualizing our datasets
+
+"""
+
 import matplotlib.pyplot as plt
 from typing import List, Optional
 import numpy as np

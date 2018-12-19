@@ -1,7 +1,7 @@
 from twaml.data import root_dataset, h5_dataset
-from twaml.utils import SD_2j2b, SD_2j1b, SD_1j1b
+from twaml.utils import SD_2J2B, SD_2J1B, SD_1J1B
 
-BRANCHES_1j1b = [
+BRANCHES_1J1B = [
     'cent_lep1lep2',
     'deltaR_lep1_jet1',
     'deltapT_lep1_jet1',
@@ -12,7 +12,7 @@ BRANCHES_1j1b = [
     'pTsys_lep1lep2jet1met'
 ]
 
-BRANCHES_2j1b = [
+BRANCHES_2J1B = [
     'deltaR_lep1_jet1',
     'deltaR_lep1lep2_jet1jet2',
     'deltaR_lep1lep2_jet1jet2met',
@@ -32,7 +32,7 @@ BRANCHES_2j1b = [
     'pTsys_lep1lep2jet1met'
 ]
 
-BRANCHES_2j2b = [
+BRANCHES_2J2B = [
     'mass_lep1jet1',
     'mass_lep1jet2',
     'mass_lep2jet1',
@@ -77,14 +77,14 @@ def create_h5_from_root(regions, base_dir):
 
     for region in regions:
         if region == '2j2b':
-            select = SD_2j2b
-            branches = BRANCHES_2j2b
+            select = SD_2J2B
+            branches = BRANCHES_2J2B
         elif region == '2j1b':
-            select = SD_2j1b
-            branches = BRANCHES_2j1b
+            select = SD_2J1B
+            branches = BRANCHES_2J1B
         elif region == '1j1b':
-            select = SD_1j1b
-            branches = BRANCHES_1j1b
+            select = SD_1J1B
+            branches = BRANCHES_1J1B
         else:
             raise ValueError('invalid region: {}', region)
 
