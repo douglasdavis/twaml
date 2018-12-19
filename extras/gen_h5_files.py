@@ -1,8 +1,53 @@
 from twaml.data import root_dataset, h5_dataset
-from twaml.utils import BRANCHES_2j2b, SD_2j2b
-from twaml.utils import BRANCHES_2j1b, SD_2j1b
-from twaml.utils import BRANCHES_1j1b, SD_1j1b
+from twaml.utils import SD_2j2b, SD_2j1b, SD_1j1b
 
+BRANCHES_1j1b = [
+    'cent_lep1lep2',
+    'deltaR_lep1_jet1',
+    'deltapT_lep1_jet1',
+    'deltapT_lep1_lep2',
+    'mT_jet1met',
+    'mass_lep1jet1',
+    'mass_lep2jet1',
+    'pTsys_lep1lep2jet1met'
+]
+
+BRANCHES_2j1b = [
+    'deltaR_lep1_jet1',
+    'deltaR_lep1lep2_jet1jet2',
+    'deltaR_lep1lep2_jet1jet2met',
+    'deltaR_lep2_jet2',
+    'deltapT_lep1_jet1',
+    'deltapT_lep1_lep2',
+    'deltapT_lep1lep2jet1_met',
+    'deltapT_lep2_jet2',
+    'mT_jet1met',
+    'mass_jet1jet2',
+    'mass_lep1jet1',
+    'mass_lep1jet2',
+    'mass_lep2jet1',
+    'mv2c10_jetF',
+    'pT_jetF',
+    'pTsys_lep1lep2jet1jet2met',
+    'pTsys_lep1lep2jet1met'
+]
+
+BRANCHES_2j2b = [
+    'mass_lep1jet1',
+    'mass_lep1jet2',
+    'mass_lep2jet1',
+    'mass_lep2jet2',
+    'deltapT_lep1lep2jet1_met',
+    'deltapT_lep2_jet2',
+    'pT_jetF',
+    'sigpTsys_lep1lep2jet1met',
+    'deltaR_lep1lep2_jet1jet2',
+    'deltaR_lep2_jet1',
+    'deltaR_lep1_jet1',
+    'deltaR_lep2_jet2',
+    'mT_jet1met',
+    'deltapT_jet1_met'
+]
 
 def create_h5_from_root(regions, base_dir):
     ttbar_files = [
