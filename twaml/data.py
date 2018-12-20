@@ -18,8 +18,9 @@ from typing import List, Dict, Tuple, Optional
 
 class dataset:
     """A class to define a dataset with a pandas.DataFrame as the payload
-    of the class. The payload is lazily constructed, so a construct()
-    function must be defined.
+    of the class. The twaml.data module provides a set of functions to
+    construct a dataset. The class constructor should be used only in
+    very special cases.
 
     Attributes
     ----------
@@ -27,22 +28,23 @@ class dataset:
       List of files delivering the dataset
     name: str
       Name for the dataset
+    tree_name: str
+      All of our datasets had to come from a ROOT tree at some point
     weights: numpy.ndarray
       The array of event weights
     df: pandas.DataFrame
       The payload of the class, a dataframe
-    is_constructed: bool
-      Flag to know if the dataset is constructed
     label: Optional[int]
       Optional dataset label (as an int)
+    has_payload: bool
+      Flag to know that the dataset actually wraps data
 
     """
 
     def __init__(self, input_files: List[str], name: Optional[str] = None,
-                 weight_name: str = 'weight_nominal',
+                 tree_name: str = 'WtLoop_nominal', weight_name: str = 'weight_nominal',
                  label: Optional[int] = None) -> None:
-        """
-        Default dataset creation
+        """Default dataset creation
 
         Parameters
         ----------
@@ -50,14 +52,15 @@ class dataset:
           List of input files
         name: Optional[str]
           Name of the dataset (if none use first file name)
+        tree_name: str
+          Name of tree which this dataset originated from
         weight_name: str
           Name of the weight branch
         label: Optional[int]
           Give dataset an integer based label
-
         """
-        self._weights = np.array([])
-        self._df = pd.DataFrame({})
+        self._weights = pd.DataFrame({})
+        self._df = np.array([])
         self.files = [PosixPath(f) for f in input_files]
         for f in self.files:
             assert f.exists(), '{} does not exist'.format(f)
@@ -66,8 +69,14 @@ class dataset:
         else:
             self.name = name
         self.weight_name = weight_name
-        self.constructed = False
+        self.tree_name = tree_name
         self._label = label
+
+    @property
+    def has_payload(self):
+        has_df = not self._df.empty
+        has_weights = self._weights.shape[0] > 0
+        return has_df and has_weights
 
     @property
     def df(self) -> pd.DataFrame:
@@ -97,14 +106,9 @@ class dataset:
 
     @property
     def label_array(self) -> Optional[np.ndarray]:
-        if self.label is not None:
-            return np.ones_like(self.weights, dtype=np.int64) * self.label
-        else:
+        if self.label is None:
             return None
-
-    @property
-    def is_constructed(self) -> bool:
-        return self.constructed
+        return np.ones_like(self.weights, dtype=np.int64) * self.label
 
     @property
     def shape(self) -> Tuple:
@@ -121,10 +125,6 @@ class dataset:
         self._weights = w
         self.constructed = True
 
-    def construct(self):
-        """Not implemented for base class"""
-        raise NotImplementedError
-
     def __add__(self, other: 'dataset') -> 'dataset':
         """Add to datasets together
 
@@ -132,15 +132,16 @@ class dataset:
         generate a new dataset with a new payload.
 
         """
-        assert self.is_constructed, 'Unconstructed df (self)'
-        assert other.is_constructed, 'Unconstructed df (other)'
+        assert self.has_payload, 'Unconstructed df (self)'
+        assert other.has_payload, 'Unconstructed df (other)'
         assert self.weight_name == other.weight_name, 'different weight names'
         assert self.shape[1] == other.shape[1], 'different df columns'
         assert self.weights.shape == other.weights.shape, 'weight shapes are different'
         new_weights = np.concatenate([self.weights, other.weights])
         new_df = pd.concat([self.df, other.df])
         new_files = [str(f) for f in (self.files + other.files)]
-        new_ds = dataset(new_files, self.name, self.weight_name)
+        new_ds = dataset(new_files, self.name, weight_name=self.weight_name,
+                         tree_name=self.tree_name, label=self.label)
         new_ds._set_df_and_weights(new_df, new_weights)
         return new_ds
 
@@ -156,8 +157,8 @@ class dataset:
           The dataset to append
 
         """
-        assert self.is_constructed, 'Unconstructed df (self)'
-        assert other.is_constructed, 'Unconstructed df (other)'
+        assert self.has_payload, 'Unconstructed df (self)'
+        assert other.has_payload, 'Unconstructed df (other)'
         assert self.weight_name == other.weight_name, 'different weight names'
         assert self.shape[1] == other.shape[1], 'different df columns'
         assert self.weights.shape == other.weights.shape, 'weight shapes are different'
@@ -187,189 +188,153 @@ class dataset:
         return len(self.weights)
 
 
-class root_dataset(dataset):
-    """A ROOT specific dataset
-
-    Attributes
-    ----------
-    tree_name: str
-      The ROOT tree name delivering the dataset
-    branches: List[str]
-      The list of branches in the trees to use
-    """
-
-    def __init__(self, input_files: List[str], name: Optional[str] = None,
+def root_dataset(input_files: List[str], name: Optional[str] = None,
                  tree_name: str = 'WtLoop_nominal',
                  weight_name: str = 'weight_nominal',
                  branches: List[str] = None,
-                 select: Dict = None,
-                 label: Optional[int] = None,
-                 force_construct: bool = False) -> None:
-        """Create a ROOT dataset
+                 selection: Dict = None,
+                 label: Optional[int] = None) -> dataset:
+    """Create a ROOT dataset
 
-        Parameters
-        ----------
-        input_files: List[str]
-          List of ROOT input_files to use
-        name: str
-          Name of the dataset (if none use first file name)
-        tree_name: str
-          Name of the tree in the file to use
-        weight_name: str
-          Name of the weight branch
-        branches: List[str]
-          List of branches to store in the dataset
-        select: Dict
-          A dictionary of selections to apply of the form:
-          ``{branch_name: (numpy.ufunc, test_value)}``. the
-          selections are combined using ``np.logical_and``
-        label: Optional[int]
-          Give the dataset an integer label
-        force_construct: bool
-          Force construction (normally lazily constructed)
+    Parameters
+    ----------
+    input_files: List[str]
+        List of ROOT input_files to use
+    name: str
+        Name of the dataset (if none use first file name)
+    tree_name: str
+        Name of the tree in the file to use
+    weight_name: str
+        Name of the weight branch
+    branches: List[str]
+        List of branches to store in the dataset
+    selection: Dict
+        A dictionary of selections to apply of the form:
+        ``{branch_name: (numpy.ufunc, test_value)}``. the
+        selections are combined using ``np.logical_and``
+    label: Optional[int]
+        Give the dataset an integer label
 
-        Examples
-        --------
-        Example with a single file and two branches:
+    Examples
+    --------
+    Example with a single file and two branches:
 
-        >>> ds1 = root_dataset(['file.root'], name='myds',
-        ...                    branches=['pT_lep1', 'pT_lep2'],
-        ...                    label=1, force_construct=True)
+    >>> ds1 = root_dataset(['file.root'], name='myds',
+    ...                    branches=['pT_lep1', 'pT_lep2'], label=1)
 
-        Example with multiple input_files and a selection (uses all
-        branches). The selection requires the branch ``nbjets == 1``
-        and ``njets >= 1``.
+    Example with multiple input_files and a selection (uses all
+    branches). The selection requires the branch ``nbjets == 1``
+    and ``njets >= 1``.
 
-        >>> flist = ['file1.root', 'file2.root', 'file3.root']
-        >>> ds = root_dataset(flist, select={'nbjets': (np.equal, 1),
-        ...                                  'njets': (np.greater, 1)}
-        >>> ds.construct() ## construct
-        >>> ds.label = 2 ## add label after the fact
+    >>> flist = ['file1.root', 'file2.root', 'file3.root']
+    >>> ds = root_dataset(flist, select={'nbjets': (np.equal, 1),
+    ...                                  'njets': (np.greater, 1)}
+    >>> ds.construct() ## construct
+    >>> ds.label = 2 ## add label after the fact
 
-        """
-
-        super().__init__(input_files, name=name,
-                         weight_name=weight_name, label=label)
-
-        self.tree_name = tree_name
-        self.weight_name = weight_name
-        self.branches = branches
-        self.uproot_trees = [uproot.open(file_name)[tree_name]
-                             for file_name in self.files]
-        self._selection = select
-        self._weights = None
-        self._df = None
-        if force_construct:
-            self.construct()
-
-    def construct(self) -> None:
-        """Construct the payload from the ROOT files"""
-        weight_list, frame_list = [], []
-        for t in self.uproot_trees:
-            raw_w = t.array(self.weight_name)
-            raw_f = t.pandas.df(branches=self.branches, namedecode='utf-8')
-            isel = np.ones((raw_w.shape[0]), dtype=bool)
-            if self._selection is not None:
-                selections = {k: v[0](t.array(k), v[1]) for k, v
-                              in self._selection.items()}
-                for k, v in selections.items():
-                    isel = np.logical_and(isel, v)
-            weight_list.append(raw_w[isel])
-            frame_list.append(raw_f[isel])
-        self._weights = np.concatenate(weight_list)
-        self._df = pd.concat(frame_list)
-        self.constructed = True
-
-
-class pytables_dataset(dataset):
     """
-    Dataset constructed from existing pytables style h5 files
+
+    ds = dataset(input_files, name, tree_name=tree_name,
+                 weight_name=weight_name, label=label)
+
+    uproot_trees = [uproot.open(file_name)[tree_name]
+                    for file_name in input_files]
+
+    weight_list, frame_list = [], []
+    for t in uproot_trees:
+        raw_w = t.array(weight_name)
+        raw_f = t.pandas.df(branches=branches, namedecode='utf-8')
+        isel = np.ones((raw_w.shape[0]), dtype=bool)
+        if selection is not None:
+            selections = {k: v[0](t.array(k), v[1]) for k, v
+                          in selection.items()}
+            for k, v in selections.items():
+                isel = np.logical_and(isel, v)
+        weight_list.append(raw_w[isel])
+        frame_list.append(raw_f[isel])
+    weights_array = np.concatenate(weight_list)
+    df = pd.concat(frame_list)
+    ds._set_df_and_weights(df, weights_array)
+    return ds
+
+
+def pytables_dataset(file_name: str, name: str,
+                     tree_name: str = 'WtLoop_nominal',
+                     weight_name: str = 'weight_nominal',
+                     label: Optional[int] = None) -> dataset:
+    """Create an h5 dataset from pytables output generated from
+    dataset.to_pytables
+
+    Parameters
+    ----------
+    file_name: str
+        Name of h5 file containing the payload
+    name: str
+        Name of the dataset inside the h5 file
+    tree_name: str
+        Name of tree where dataset originated
+    weight_name: str
+        Name of the weight array inside the h5 file
+    label: Optional[int]
+        Give the dataset an integer label
+    force_construct: bool
+        Force construction (normally lazily constructed)
+
+    Examples
+    --------
+
+    >>> ds1 = h5_dataset('ttbar.h5', name='ttbar', force_construct=True)
+    >>> ds1.label = 1 ## add label to constructed dataset
+    >>> ds2 = h5_dataset('tW_DR.h5', name='tW_DR', label=2)
+    >>> ds2.construct() ## construct already labeled dataset
+
     """
-    def __init__(self, file_name: str, name: str,
-                 weight_name: str = 'weight_nominal',
-                 label: Optional[int] = None,
-                 force_construct: bool = False) -> None:
-        """
-        Create an h5 dataset from pytables output
+    main_frame = pd.read_hdf(file_name, name)
+    main_weight_frame = pd.read_hdf(file_name, weight_name)
+    w_array = main_weight_frame.weights.values
 
-        Parameters
-        ----------
-        file_name: str
-          Name of h5 file containing the payload
-        name: str
-          Name of the dataset inside the h5 file
-        weight_name: str
-          Name of the weight array inside the h5 file
-        label: Optional[int]
-          Give the dataset an integer label
-        force_construct: bool
-          Force construction (normally lazily constructed)
-
-        Examples
-        --------
-
-        >>> ds1 = h5_dataset('ttbar.h5', name='ttbar', force_construct=True)
-        >>> ds1.label = 1 ## add label to constructed dataset
-        >>> ds2 = h5_dataset('tW_DR.h5', name='tW_DR', label=2)
-        >>> ds2.construct() ## construct already labeled dataset
-
-        """
-        super().__init__([file_name], name=name, label=label,
-                         weight_name=weight_name)
-
-        if force_construct:
-            self.construct()
-
-    def construct(self) -> None:
-        """Construct the payload from the h5 files"""
-        main_frame = pd.read_hdf(self.files[0], self.name)
-        main_weight_frame = pd.read_hdf(self.files[0], self.weight_name)
-        w_array = main_weight_frame.weights.values
-        self._set_df_and_weights(main_frame, w_array)
+    ds = dataset([file_name], name, weight_name=weight_name,
+                 tree_name=tree_name, label=label)
+    ds._set_df_and_weights(main_frame, w_array)
+    return ds
 
 
-class h5_dataset(dataset):
+def h5_dataset(file_name: str, name: str, columns: List[str],
+               tree_name: str = 'WtLoop_nominal',
+               weight_name: str = 'weight_nominal',
+               label: Optional[int] = None) -> dataset:
+    """Create a dataset from generic h5 input (loosely expected to be from
+    the ATLAS Analysis Release utility ``ttree2hdf5``
+
+    Parameters
+    ----------
+    file_name: str
+        Name of h5 file containing the payload
+    name: str
+        Name of the dataset inside the h5 file
+    columns: List[str]
+        Names of columns (branches) to include in payload
+    tree_name: str
+        Name of tree dataset originates from
+    weight_name: str
+        Name of the weight array inside the h5 file
+    label: Optional[int]
+        Give the dataset an integer label
+
     """
-    Dataset constructed from existing h5 files
-    """
-    def __init__(self, file_name: str, name: str, columns: List[str],
-                 weight_name: str = 'weight_nominal',
-                 label: Optional[int] = None,
-                 force_construct: bool = False) -> None:
-        """
-        Create an h5 dataset
+    ds = dataset([file_name], name=name, weight_name=weight_name,
+                 tree_name=tree_name, label=label)
 
-        Parameters
-        ----------
-        file_name: str
-          Name of h5 file containing the payload
-        name: str
-          Name of the dataset inside the h5 file
-        columns: List[str]
-          Names of columns (branches) to include in payload
-        weight_name: str
-          Name of the weight array inside the h5 file
-        label: Optional[int]
-          Give the dataset an integer label
-        force_construct: bool
-          Force construction (normally lazily constructed)
-        """
-        super().__init__([file_name], name=name, label=label,
-                         weight_name=weight_name)
-        self._columns = columns
-        if force_construct:
-            self.construct()
-
-    def construct(self) -> None:
-        """Construct the payload from the h5 files"""
-        f = h5py.File(self.files[0], mode='r')
-        full_ds = f[self.name]
-        w_array = f[self.name][self.weight_name]
-        coldict = {}
-        for col in self._columns:
-            coldict[col] = full_ds[col]
-        frame = pd.DataFrame(coldict)
-        self._set_df_and_weights(frame, w_array)
+    """Construct the payload from the h5 files"""
+    f = h5py.File(file_name, mode='r')
+    full_ds = f[name]
+    w_array = f[name][weight_name]
+    coldict = {}
+    for col in columns:
+        coldict[col] = full_ds[col]
+    frame = pd.DataFrame(coldict)
+    ds._set_df_and_weights(frame, w_array)
+    return ds
 
 
 def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:

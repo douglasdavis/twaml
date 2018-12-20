@@ -2,17 +2,15 @@ import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
 import xgboost as xgb
-from twaml.data import h5_dataset
-import twaml.data
+from twaml.data import pytables_dataset
+from twaml.data import scale_weight_sum
 import matplotlib.pyplot as plt
 
-ttbar = h5_dataset('ttbar_1j1b.h5', 'ttbar_1j1b',
-                   force_construct=True, label=0)
-tW_DR = h5_dataset('tW_DR_1j1b.h5', 'tW_DR_1j1b',
-                   force_construct=True, label=1)
+ttbar = pytables_dataset('ttbar_1j1b.h5', 'ttbar_1j1b', label=0)
+tW_DR = pytables_dataset('tW_DR_1j1b.h5', 'tW_DR_1j1b', label=1)
 sow = ttbar.weights.sum() + tW_DR.weights.sum()
 mwfl = sow * 0.01
-twaml.data.dataset.scale_weight_sum(tW_DR, ttbar)
+scale_weight_sum(tW_DR, ttbar)
 
 y = np.concatenate([tW_DR.label_array, ttbar.label_array])
 X = np.concatenate([tW_DR.df.values, ttbar.df.values])
@@ -46,14 +44,14 @@ for train_idx, test_idx in folder.split(X):
     ttbar_w_dist.append(w_test[y_test == 0])
     ttbar_dist.append(predict_pro[y_test == 0])
     tW_dist.append(predict_pro[y_test == 1])
-ttbar_dist = np.concatenate(ttbar_dist)
-ttbar_w_dist = np.concatenate(ttbar_w_dist)
-tW_dist = np.concatenate(tW_dist)
-tW_w_dist = np.concatenate(tW_w_dist)
-_ = plt.hist(tW_dist.T[1], bins=100, weights=tW_w_dist,
+ttbar_dist_all = np.concatenate(ttbar_dist)
+ttbar_w_dist_all = np.concatenate(ttbar_w_dist)
+tW_dist_all = np.concatenate(tW_dist)
+tW_w_dist_all = np.concatenate(tW_w_dist)
+_ = plt.hist(tW_dist_all.T[1], bins=100, weights=tW_w_dist_all,
              density=True, histtype='step', label='tW')
-_ = plt.hist(ttbar_dist.T[1], bins=_[1], density=True,
-             weights=ttbar_w_dist, histtype='step', label='ttbar')
+_ = plt.hist(ttbar_dist_all.T[1], bins=_[1], density=True,
+             weights=ttbar_w_dist_all, histtype='step', label='ttbar')
 _ = plt.legend()
 plt.savefig('out.pdf')
 del _

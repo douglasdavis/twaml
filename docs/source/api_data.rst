@@ -8,41 +8,42 @@ pandas DataFrames
 Classes
 -------
 
+.. currentmodule:: twaml.data
+
 ``twaml.data.dataset``
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: twaml.data.dataset
+.. autoclass:: dataset
    :members:
    :show-inheritance:
    :inherited-members:
+
+Dataset Building Functions
+--------------------------
+
+.. currentmodule:: twaml.data
+
 
 ``twaml.data.root_dataset``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: twaml.data.root_dataset
-   :members:
-   :show-inheritance:
-   :inherited-members:
+.. autofunction:: root_dataset
 
 ``twaml.data.pytables_dataset``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: twaml.data.pytables_dataset
-   :members:
-   :show-inheritance:
-   :inherited-members:
+.. autofunction:: pytables_dataset
 
 ``twaml.data.h5_dataset``
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: twaml.data.h5_dataset
-   :members:
-   :show-inheritance:
-   :inherited-members:
+.. autofunction:: h5_dataset
+
 
 Helper Functions
 ----------------
 
-.. currentmodule:: twaml.data
+``twaml.data.scale_weight_sum``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: scale_weight_sum

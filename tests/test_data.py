@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import uproot
 import h5py
 from twaml.data import root_dataset, h5_dataset, pytables_dataset
 from twaml.data import scale_weight_sum
@@ -8,7 +9,6 @@ from twaml.data import scale_weight_sum
 branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
 ds = root_dataset(['tests/data/test_file.root'], name='myds',
                   branches=branches)
-ds.construct()
 
 
 def test_name():
@@ -22,7 +22,7 @@ def test_no_name():
 
 
 def test_content():
-    ts = ds.uproot_trees
+    ts = [uproot.open(f)[ds.tree_name] for f in ds.files]
     raws = [t.array('pT_lep1') for t in ts]
     raw = np.concatenate([raws])
     bins = np.linspace(0, 800, 21)
@@ -38,7 +38,7 @@ def test_nothing():
 
 
 def test_weight():
-    ts = ds.uproot_trees
+    ts = [uproot.open(f)[ds.tree_name] for f in ds.files]
     raws = [t.array('weight_nominal') for t in ts]
     raw = np.concatenate(raws)
     raw = raw * 150.0
@@ -48,7 +48,7 @@ def test_weight():
 
 def test_add():
     ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
-                       branches=branches, force_construct=True)
+                       branches=branches)
     ds2.weights = ds2.weights * 22
     combined = ds + ds2
     comb_w = np.concatenate([ds.weights, ds2.weights])
@@ -56,14 +56,17 @@ def test_add():
     np.testing.assert_array_almost_equal(comb_w, combined.weights, 5)
     np.testing.assert_array_almost_equal(comb_df.get_values(),
                                          combined.df.get_values(), 5)
+    assert ds.name == combined.name
+    assert ds.tree_name == combined.tree_name
+    assert ds.label == combined.label
 
 
 def test_append():
     branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
     ds1 = root_dataset(['tests/data/test_file.root'], name='myds',
-                       branches=branches, force_construct=True)
+                       branches=branches)
     ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
-                       branches=branches, force_construct=True)
+                       branches=branches)
     ds2.weights = ds2.weights * 5
     # raw
     comb_w = np.concatenate([ds1.weights, ds2.weights])
@@ -78,7 +81,7 @@ def test_append():
 
 def test_label():
     ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
-                       branches=branches, force_construct=True)
+                       branches=branches)
     assert ds2.label is None
     assert ds2.label_array is None
     ds2.label = 6
@@ -89,8 +92,7 @@ def test_label():
 
 def test_save_and_read():
     ds.to_pytables('outfile.h5')
-    new_ds = pytables_dataset('outfile.h5', name=ds.name,
-                              force_construct=True)
+    new_ds = pytables_dataset('outfile.h5', ds.name)
     X1 = ds.df.values
     X2 = new_ds.df.values
     w1 = ds.weights
@@ -102,7 +104,6 @@ def test_save_and_read():
 def test_raw_h5():
     inds = h5_dataset('tests/data/raw.h5', 'WtLoop_nominal',
                       ['pT_jet1', 'nbjets', 'met'])
-    inds.construct()
     rawf = h5py.File('tests/data/raw.h5')['WtLoop_nominal']
     raww = rawf['weight_nominal']
     rawm = rawf['met']
@@ -112,9 +113,9 @@ def test_raw_h5():
 
 def test_scale_weight_sum():
     ds1 = root_dataset(['tests/data/test_file.root'], name='myds',
-                       branches=branches, force_construct=True)
+                       branches=branches)
     ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
-                       branches=branches, force_construct=True)
+                       branches=branches)
     ds2.weights = np.random.randn(len(ds1)) * 10
     scale_weight_sum(ds1, ds2)
     testval = abs(1.0 - ds2.weights.sum()/ds1.weights.sum())
