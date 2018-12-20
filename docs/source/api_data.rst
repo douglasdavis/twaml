@@ -18,6 +18,8 @@ Classes
    :show-inheritance:
    :inherited-members:
 
+   .. automethod:: __add__
+
 Dataset Building Functions
 --------------------------
 

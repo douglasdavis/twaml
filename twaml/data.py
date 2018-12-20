@@ -126,10 +126,10 @@ class dataset:
         self.constructed = True
 
     def __add__(self, other: 'dataset') -> 'dataset':
-        """Add to datasets together
+        """Add two datasets together
 
         We perform concatenations of the dataframes and weights to
-        generate a new dataset with a new payload.
+        generate a new dataset with the combined a new payload.
 
         """
         assert self.has_payload, 'Unconstructed df (self)'
@@ -149,7 +149,7 @@ class dataset:
         """Append a dataset to an exiting one
 
         We perform concatenations of the dataframes and weights to
-        update the existing datasets payload.
+        update the existing dataset's payload.
 
         Parameters
         ----------
@@ -174,6 +174,8 @@ class dataset:
         array is stored as a separate frame with the key being the
         weight_name attribute.
 
+        An existing dataset label **is not stored**.
+
         Parameters
         ----------
         file_name : str
@@ -185,6 +187,7 @@ class dataset:
         weights_frame.to_hdf(file_name, self.weight_name, mode='a')
 
     def __len__(self) -> int:
+        """length of the dataset"""
         return len(self.weights)
 
 
@@ -207,7 +210,7 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
     weight_name: str
         Name of the weight branch
     branches: List[str]
-        List of branches to store in the dataset
+        List of branches to store in the dataset, if None use all
     selection: Dict
         A dictionary of selections to apply of the form:
         ``{branch_name: (numpy.ufunc, test_value)}``. the
@@ -224,13 +227,12 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
 
     Example with multiple input_files and a selection (uses all
     branches). The selection requires the branch ``nbjets == 1``
-    and ``njets >= 1``.
+    and ``njets >= 1``, then label it 5.
 
     >>> flist = ['file1.root', 'file2.root', 'file3.root']
-    >>> ds = root_dataset(flist, select={'nbjets': (np.equal, 1),
-    ...                                  'njets': (np.greater, 1)}
-    >>> ds.construct() ## construct
-    >>> ds.label = 2 ## add label after the fact
+    >>> ds = root_dataset(flist, selection={'nbjets': (np.equal, 1),
+    ...                                     'njets': (np.greater, 1)}
+    >>> ds.label = 5
 
     """
 
@@ -265,6 +267,10 @@ def pytables_dataset(file_name: str, name: str,
     """Create an h5 dataset from pytables output generated from
     dataset.to_pytables
 
+    The payload is extracted from the .h5 pytables files using the
+    name of the dataset and the weight name. If the name of the
+    dataset doesn't exist in the file you'll crash.
+
     Parameters
     ----------
     file_name: str
@@ -277,16 +283,12 @@ def pytables_dataset(file_name: str, name: str,
         Name of the weight array inside the h5 file
     label: Optional[int]
         Give the dataset an integer label
-    force_construct: bool
-        Force construction (normally lazily constructed)
 
     Examples
     --------
 
-    >>> ds1 = h5_dataset('ttbar.h5', name='ttbar', force_construct=True)
-    >>> ds1.label = 1 ## add label to constructed dataset
-    >>> ds2 = h5_dataset('tW_DR.h5', name='tW_DR', label=2)
-    >>> ds2.construct() ## construct already labeled dataset
+    >>> ds1 = h5_dataset('ttbar.h5', 'ttbar', tree_name='EG_SCALE_ALL__1up')
+    >>> ds1.label = 1 ## add label dataset after the fact
 
     """
     main_frame = pd.read_hdf(file_name, name)
@@ -306,16 +308,19 @@ def h5_dataset(file_name: str, name: str, columns: List[str],
     """Create a dataset from generic h5 input (loosely expected to be from
     the ATLAS Analysis Release utility ``ttree2hdf5``
 
+    The name of the HDF5 dataset inside the file is assumed to be
+    ``tree_name``. The ``name`` argument is something *you choose*.
+
     Parameters
     ----------
     file_name: str
         Name of h5 file containing the payload
     name: str
-        Name of the dataset inside the h5 file
+        Name of the dataset you would like to define
     columns: List[str]
         Names of columns (branches) to include in payload
     tree_name: str
-        Name of tree dataset originates from
+        Name of tree dataset originates from (HDF5 dataset name)
     weight_name: str
         Name of the weight array inside the h5 file
     label: Optional[int]
@@ -327,8 +332,8 @@ def h5_dataset(file_name: str, name: str, columns: List[str],
 
     """Construct the payload from the h5 files"""
     f = h5py.File(file_name, mode='r')
-    full_ds = f[name]
-    w_array = f[name][weight_name]
+    full_ds = f[tree_name]
+    w_array = f[tree_name][weight_name]
     coldict = {}
     for col in columns:
         coldict[col] = full_ds[col]
