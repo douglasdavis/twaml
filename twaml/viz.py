@@ -6,10 +6,12 @@ A module to aid visualizing our datasets
 
 """
 
-import matplotlib.pyplot as plt
-from typing import List, Optional
-import numpy as np
+from .data import dataset
 
+import matplotlib.pyplot as plt
+from typing import List, Optional, Tuple
+import numpy as np
+import math
 
 def compare_distributions(dist1, dist2, bins: Optional[np.ndarray] = None,
                           titles: List[str] = ['dist1', 'dist2'],
@@ -69,3 +71,71 @@ def compare_distributions(dist1, dist2, bins: Optional[np.ndarray] = None,
         ax.set_xlim([h1[1][0], h1[1][-1]])
 
     return fig, ax, h1, h2
+
+
+def compare_columns(ds1: dataset, ds2: dataset,
+                    columns: Optional[List[str]] = None,
+                    names: Optional[Tuple[str]] = None,
+                    colors: Optional[Tuple[str]] = None,
+                    density=True, **subplots_kw):
+    """generate a set of histograms comparing the distributions of a set
+    of columns in two different datasets.
+
+    Parameters
+    ----------
+    ds1: twaml.data.dataset
+        The first dataset
+    ds2: twaml.data.dataset
+        The second dataset
+    columns: Optional[List[str]]
+        Columns to plot; if None, plot all
+    names: Optional[Tuple[str]]
+        Names for the legend, if None use the dataset ``name`` attributes
+    colors: Optional[Tuple[str]]
+        Colors for the histograms
+    density: bool
+        Feed to ``density`` parameter in ``matplotlib.pyplot.hist``
+    subplots_kw: Dict
+      all additional keywords to send to ``matplotlib.pyplot.subplots``
+    """
+
+    col1 = list(ds1.df.columns)
+    col2 = list(ds2.df.columns)
+    if columns is None:
+        assert col1 == col2, 'different columns'
+        cols = col1
+    else:
+        cols = columns
+        for c in cols:
+            assert c in col1, f'{c} column not in ds1'
+            assert c in col2, f'{c} column not in ds2'
+    if names is None:
+        names = (ds1.name, ds2.name)
+    if colors is None:
+        colors = ('C0', 'C1')
+
+    dim = math.sqrt(len(cols))
+    dim1 = int(dim)
+    if dim1 > dim:
+        dim2 = dim1 + 1
+    else:
+        dim2 = dim1
+    fig, axs = plt.subplots(dim1, dim2)
+
+    w1, w2 = ds1.weights, ds2.weights
+    for col, a in zip(cols, axs.flatten()):
+        dist1 = ds1.df[col].values
+        dist2 = ds2.df[col].values
+        print(dist1.dtype, dist2.dtype)
+        xmin = min(np.min(dist1), np.min(dist2))
+        xmax = max(np.max(dist1), np.max(dist1))
+        if dist1.dtype == np.dtype('i4') or dist1.dtype == np.dtype('i8') or \
+           dist1.dtype == np.dtype('u4') or dist1.dtype == np.dtype('u8'):
+            nbins = xmax - xmin
+            xmax = xmax+0.5
+            xmin = xmin-0.5
+        else:
+            nbins = 50
+        a.hist([dist1, dist2], bins=np.linspace(xmin, xmax, nbins+1),
+               weights=[w1, w2], density=density, histtype='step')
+    fig.savefig(f'{ds1.name}_{ds2.name}.pdf')

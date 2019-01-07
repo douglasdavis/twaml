@@ -136,7 +136,6 @@ class dataset:
         assert other.has_payload, 'Unconstructed df (other)'
         assert self.weight_name == other.weight_name, 'different weight names'
         assert self.shape[1] == other.shape[1], 'different df columns'
-        assert self.weights.shape == other.weights.shape, 'weight shapes are different'
         new_weights = np.concatenate([self.weights, other.weights])
         new_df = pd.concat([self.df, other.df])
         new_files = [str(f) for f in (self.files + other.files)]
@@ -161,7 +160,6 @@ class dataset:
         assert other.has_payload, 'Unconstructed df (other)'
         assert self.weight_name == other.weight_name, 'different weight names'
         assert self.shape[1] == other.shape[1], 'different df columns'
-        assert self.weights.shape == other.weights.shape, 'weight shapes are different'
         self._df = pd.concat([self._df, other.df])
         self._weights = np.concatenate([self._weights, other.weights])
         self.files = self.files + other.files
