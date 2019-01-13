@@ -10,8 +10,8 @@ from twaml.data import root_dataset
 def root_to_pytables():
     """command line application which converts a set of ROOT files into a
     pytables hdf5 file via the ``twaml.data.root_dataset`` function
-    and the ``to_pytables`` member function ofthe
-    ``twaml.data.dataset``
+    and the ``to_pytables`` member function of the
+    ``twaml.data.dataset`` class.
 
     """
     parser = argparse.ArgumentParser(
@@ -41,7 +41,8 @@ def root_to_pytables():
     if args.true_branches is not None:
         sel_dict = { bn : (np.equal, True) for bn in args.true_branches }
 
-    ds = root_dataset(args.input_files, name=args.name,
+    ds = root_dataset(args.input_files,
+                      name=args.name,
                       tree_name=args.tree_name,
                       weight_name=args.weight_name,
                       selection=sel_dict,

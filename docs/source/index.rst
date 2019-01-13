@@ -7,6 +7,7 @@
    :hidden:
 
    started.rst
+   cli.rst
    api.rst
    tests.rst
 

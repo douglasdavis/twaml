@@ -1,7 +1,8 @@
 import os
 import twaml.viz
 import numpy as np
-
+import matplotlib as mpl
+mpl.use('agg')
 
 def test_compare_dist():
     bins = np.linspace(-2, 2, 11)
