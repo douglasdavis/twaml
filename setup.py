@@ -21,6 +21,11 @@ setup(
     version=get_version(),
     scripts=[],
     packages=find_packages(exclude=['tests']),
+    entry_points={
+        'console_scripts':[
+            'twaml-convert = twaml.clapps:root_to_pytables',
+        ]
+    },
     description='tW Analysis Machine Learning',
     long_description=LD,
     author='Doug Davis',
@@ -33,5 +38,6 @@ setup(
     classifiers=[
         "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
     ]
 )
