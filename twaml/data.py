@@ -73,7 +73,7 @@ class dataset:
         self._label = label
 
     @property
-    def has_payload(self):
+    def has_payload(self) -> bool:
         has_df = not self._df.empty
         has_weights = self._weights.shape[0] > 0
         return has_df and has_weights
@@ -123,26 +123,6 @@ class dataset:
         assert len(df) == len(w), 'unequal length df and weights'
         self._df = df
         self._weights = w
-        self.constructed = True
-
-    def __add__(self, other: 'dataset') -> 'dataset':
-        """Add two datasets together
-
-        We perform concatenations of the dataframes and weights to
-        generate a new dataset with the combined a new payload.
-
-        """
-        assert self.has_payload, 'Unconstructed df (self)'
-        assert other.has_payload, 'Unconstructed df (other)'
-        assert self.weight_name == other.weight_name, 'different weight names'
-        assert self.shape[1] == other.shape[1], 'different df columns'
-        new_weights = np.concatenate([self.weights, other.weights])
-        new_df = pd.concat([self.df, other.df])
-        new_files = [str(f) for f in (self.files + other.files)]
-        new_ds = dataset(new_files, self.name, weight_name=self.weight_name,
-                         tree_name=self.tree_name, label=self.label)
-        new_ds._set_df_and_weights(new_df, new_weights)
-        return new_ds
 
     def append(self, other: 'dataset') -> None:
         """Append a dataset to an exiting one
@@ -163,7 +143,6 @@ class dataset:
         self._df = pd.concat([self._df, other.df])
         self._weights = np.concatenate([self._weights, other.weights])
         self.files = self.files + other.files
-        self.constructed = True
 
     def to_pytables(self, file_name: str) -> None:
         """Write payload to disk as an pytables h5 file with strict options
@@ -184,9 +163,36 @@ class dataset:
         self._df.to_hdf(file_name, self.name, mode='w')
         weights_frame.to_hdf(file_name, self.weight_name, mode='a')
 
+    def __add__(self, other: 'dataset') -> 'dataset':
+        """Add two datasets together
+
+        We perform concatenations of the dataframes and weights to
+        generate a new dataset with the combined a new payload.
+
+        """
+        assert self.has_payload, 'Unconstructed df (self)'
+        assert other.has_payload, 'Unconstructed df (other)'
+        assert self.weight_name == other.weight_name, 'different weight names'
+        assert self.shape[1] == other.shape[1], 'different df columns'
+        new_weights = np.concatenate([self.weights, other.weights])
+        new_df = pd.concat([self.df, other.df])
+        new_files = [str(f) for f in (self.files + other.files)]
+        new_ds = dataset(new_files, self.name, weight_name=self.weight_name,
+                         tree_name=self.tree_name, label=self.label)
+        new_ds._set_df_and_weights(new_df, new_weights)
+        return new_ds
+
     def __len__(self) -> int:
         """length of the dataset"""
         return len(self.weights)
+
+    def __repr__(self) -> str:
+        """standard repr"""
+        return '<twaml.data.dataset(name={}, shape={})>'.format(self.name, self.shape)
+
+    def __str__(self) -> str:
+        """standard str"""
+        return 'dataset(name={})'.format(self.name)
 
 
 def root_dataset(input_files: List[str], name: Optional[str] = None,
@@ -353,8 +359,8 @@ def scale_weight_sum(to_update: 'dataset', reference: 'dataset') -> None:
         dataset to scale to
 
     """
-    assert to_update.constructed, 'to_update is not constructed'
-    assert reference.constructed, 'reference is not constructed'
+    assert to_update.has_payload, '{} is without payload'.format(to_update)
+    assert reference.has_payload, '{} is without payload'.format(reference)
     sum_to_update = to_update.weights.sum()
     sum_reference = reference.weights.sum()
     to_update.weights *= (sum_reference/sum_to_update)
