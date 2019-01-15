@@ -357,9 +357,9 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
     Example where we detect additional weights automatically
 
     >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
-                          detect_weights=True)
-    """
+    ...                   detect_weights=True)
 
+    """
     ds = dataset(input_files, name, tree_name=tree_name,
                  weight_name=weight_name, label=label)
 
