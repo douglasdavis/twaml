@@ -34,6 +34,8 @@ def root_to_pytables():
     parser.add_argument('--weight-name', type=str, required=False,
                         default='weight_nominal',
                         help='weight branch name')
+    parser.add_argument('--addit-weights', type=str, nargs='+', required=False,
+                        help='additional weights to save')
     parser.add_argument('--true-branches', type=str, nargs='+', required=False,
                         help='branches that must be true to pass selection')
     args = parser.parse_args()
@@ -46,6 +48,7 @@ def root_to_pytables():
                       tree_name=args.tree_name,
                       weight_name=args.weight_name,
                       selection=sel_dict,
-                      branches=args.branches)
+                      branches=args.branches,
+                      addit_weights=args.addit_weights)
     ds.to_pytables(args.out)
     return 0
