@@ -4,7 +4,7 @@
 
 This module contains classes to abstract datasets using
 pandas.DataFrames as the payload for feeding to machine learning
-frameworks.
+frameworks and other general data investigating
 
 """
 
@@ -12,6 +12,7 @@ import uproot
 import pandas as pd
 import h5py
 import numpy as np
+import re
 from pathlib import PosixPath
 from typing import List, Dict, Tuple, Optional
 
@@ -141,8 +142,8 @@ class dataset:
             assert len(df) == len(addit), 'unequal length df and addit weights'
             self._addit_weights = addit
 
-    def rm_weight_branches(self) -> None:
-        """Remove all columns which begin with ``weight_``
+    def rm_weight_columns(self) -> None:
+        """Remove all payload df columns which begin with ``weight_``
 
         If you are reading a dataset that was created retaining
         weights in the main payload, this is a useful function to
@@ -297,13 +298,11 @@ class dataset:
 
 
 def root_dataset(input_files: List[str], name: Optional[str] = None,
-                 tree_name: str = 'WtLoop_nominal',
-                 weight_name: str = 'weight_nominal',
-                 branches: List[str] = None,
-                 selection: Dict = None,
-                 label: Optional[int] = None,
-                 ignore_weights: bool = True,
-                 addit_weights: Optional[List[str]] = None) -> dataset:
+                 tree_name: str = 'WtLoop_nominal', weight_name: str = 'weight_nominal',
+                 branches: List[str] = None, selection: Dict = None,
+                 label: Optional[int] = None, allow_weights_in_df: bool = False,
+                 addit_weights: Optional[List[str]] = None,
+                 detect_weights: bool = False) -> dataset:
     """Create a ROOT dataset
 
     Parameters
@@ -324,10 +323,14 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
         selections are combined using ``np.logical_and``
     label: Optional[int]
         Give the dataset an integer label
-    ignore_weights: bool
-        Ignore all "^weight" branches when constructing the main payload
+    allow_weights_in_df: bool
+        Allow "^weight_" branches in the payload dataframe
     addit_weights: Optional[List[str]]
-        Additional weights to store in a second dataframe
+        Additional weights to store in a second dataframe.
+    detect_weights: bool
+        If True, fill the addit_weights df with all "^weight_"
+        branches If ``addit_weights`` is not None, this option is
+        ignored.
 
     Examples
     --------
@@ -350,6 +353,11 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
     >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
     ...                   addit_weights=['weight_sys_radLo', ' weight_sys_radHi'])
 
+
+    Example where we detect additional weights automatically
+
+    >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
+                          detect_weights=True)
     """
 
     ds = dataset(input_files, name, tree_name=tree_name,
@@ -358,13 +366,27 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
     uproot_trees = [uproot.open(file_name)[tree_name]
                     for file_name in input_files]
 
+    wpat = re.compile('^weight_')
+    if addit_weights is not None:
+        w_branches = addit_weights
+    elif detect_weights:
+        urtkeys = [k.decode('utf-8') for k in uproot_trees[0].keys()]
+        w_branches = [k for k in urtkeys if re.match(wpat, k)]
+        if weight_name in w_branches:
+            w_branches.remove(weight_name)
+    else:
+        w_branches = None
+
     weight_list, frame_list, addit_frame_list = [], [], []
     for t in uproot_trees:
         raw_w = t.array(weight_name)
         raw_f = t.pandas.df(branches=branches, namedecode='utf-8')
+        if not allow_weights_in_df:
+            rmthese = [c for c in raw_f.columns if re.match(wpat, c)]
+            raw_f.drop(columns=rmthese, inplace=True)
 
-        if addit_weights is not None:
-            raw_a = t.pandas.df(branches=addit_weights, namedecode='utf-8')
+        if w_branches is not None:
+            raw_aw = t.pandas.df(branches=w_branches, namedecode='utf-8')
 
         isel = np.ones((raw_w.shape[0]), dtype=bool)
         if selection is not None:
@@ -374,21 +396,17 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
                 isel = np.logical_and(isel, v)
         weight_list.append(raw_w[isel])
         frame_list.append(raw_f[isel])
-        if addit_weights is not None:
-            addit_frame_list.append(raw_a[isel])
-
+        if w_branches is not None:
+            addit_frame_list.append(raw_aw[isel])
 
     weights_array = np.concatenate(weight_list)
     df = pd.concat(frame_list)
-    if addit_weights is not None:
+    if w_branches is not None:
         aw_df = pd.concat(addit_frame_list)
     else:
         aw_df = None
 
     ds._set_df_and_weights(df, weights_array, addit=aw_df)
-
-    if ignore_weights:
-        ds.rm_weight_branches()
 
     return ds
 
@@ -396,8 +414,7 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
 def pytables_dataset(file_name: str, name: str,
                      tree_name: str = 'WtLoop_nominal',
                      weight_name: str = 'weight_nominal',
-                     label: Optional[int] = None,
-                     ignore_weights: bool = True) -> dataset:
+                     label: Optional[int] = None) -> dataset:
     """Create an h5 dataset from pytables output generated from
     dataset.to_pytables
 
@@ -418,13 +435,11 @@ def pytables_dataset(file_name: str, name: str,
         Name of the weight array inside the h5 file
     label: Optional[int]
         Give the dataset an integer label
-    ignore_weights: bool
-        Ignore all "^weight" branches when constructing the main payload
 
     Examples
     --------
 
-    >>> ds1 = h5_dataset('ttbar.h5', 'ttbar', tree_name='EG_SCALE_ALL__1up')
+    >>> ds1 = pytables_dataset('ttbar.h5', 'ttbar')
     >>> ds1.label = 1 ## add label dataset after the fact
 
     """
