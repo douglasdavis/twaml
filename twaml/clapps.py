@@ -38,6 +38,9 @@ def root_to_pytables():
                         help='additional weights to save')
     parser.add_argument('--true-branches', type=str, nargs='+', required=False,
                         help='branches that must be true to pass selection')
+    parser.add_argument('--detect-weights', action='store_true',
+                        help=('detect weights in the dataset, '
+                              '--addit-weights overrides this'))
     args = parser.parse_args()
     sel_dict = None
     if args.true_branches is not None:
@@ -49,6 +52,7 @@ def root_to_pytables():
                       weight_name=args.weight_name,
                       selection=sel_dict,
                       branches=args.branches,
-                      addit_weights=args.addit_weights)
+                      addit_weights=args.addit_weights,
+                      detect_weights=args.detect_weights)
     ds.to_pytables(args.out)
     return 0
