@@ -34,7 +34,7 @@ class dataset:
       The array of event weights
     df: pandas.DataFrame
       The payload of the class, a dataframe
-    additional_weights: Optional[pandas.DataFrame]
+    addit_weights: Optional[pandas.DataFrame]
       Additional weights to have access too
     label: Optional[int]
       Optional dataset label (as an int)
@@ -161,12 +161,12 @@ class dataset:
     def rm_columns_re(self, cols: List[str]) -> None:
         """Remove some columns from the payload based on regex paterns
 
+        Uses ``pd.DataFrame.drop(..., inplace=True)``.
+
         Parameters
         ----------
         cols : List[str]
           List of regex paterns
-
-        Uses ``pd.DataFrame.drop(..., inplace=True)``.
         """
         import re
         for rm in cols:
@@ -231,7 +231,8 @@ class dataset:
 
         The key in the file is the name of the dataset. The weights
         array is stored as a separate frame with the key being the
-        weight_name attribute.
+        weight_name attribute. If additional weights are present they
+        are saved as well.
 
         An existing dataset label **is not stored**.
 
@@ -244,6 +245,10 @@ class dataset:
         weights_frame = pd.DataFrame(dict(weights=self._weights))
         self._df.to_hdf(file_name, self.name, mode='w')
         weights_frame.to_hdf(file_name, self.weight_name, mode='a')
+        if self._addit_weights is not None:
+            self._addit_weights.to_hdf(file_name,
+                                       '{}_addit_weights'.format(self.name),
+                                       mode='a')
 
     def __add__(self, other: 'dataset') -> 'dataset':
         """Add two datasets together
@@ -340,6 +345,11 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
     ...                                     'njets': (np.greater, 1)}
     >>> ds.label = 5
 
+    Example using additional weights
+
+    >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
+    ...                   addit_weights=['weight_sys_radLo', ' weight_sys_radHi'])
+
     """
 
     ds = dataset(input_files, name, tree_name=tree_name,
@@ -386,13 +396,15 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
 def pytables_dataset(file_name: str, name: str,
                      tree_name: str = 'WtLoop_nominal',
                      weight_name: str = 'weight_nominal',
-                     label: Optional[int] = None) -> dataset:
+                     label: Optional[int] = None,
+                     ignore_weights: bool = True) -> dataset:
     """Create an h5 dataset from pytables output generated from
     dataset.to_pytables
 
     The payload is extracted from the .h5 pytables files using the
     name of the dataset and the weight name. If the name of the
-    dataset doesn't exist in the file you'll crash.
+    dataset doesn't exist in the file you'll crash. Additional weights
+    are retrieved if available.
 
     Parameters
     ----------
@@ -406,6 +418,8 @@ def pytables_dataset(file_name: str, name: str,
         Name of the weight array inside the h5 file
     label: Optional[int]
         Give the dataset an integer label
+    ignore_weights: bool
+        Ignore all "^weight" branches when constructing the main payload
 
     Examples
     --------
@@ -416,11 +430,15 @@ def pytables_dataset(file_name: str, name: str,
     """
     main_frame = pd.read_hdf(file_name, name)
     main_weight_frame = pd.read_hdf(file_name, weight_name)
+    h5f = h5py.File(file_name, 'r')
+    if '{}_addit_weights'.format(name) in h5f:
+        addit_frame = pd.read_hdf(file_name, '{}_addit_weights'.format(name))
+    else:
+        addit_frame = None
     w_array = main_weight_frame.weights.values
-
     ds = dataset([file_name], name, weight_name=weight_name,
                  tree_name=tree_name, label=label)
-    ds._set_df_and_weights(main_frame, w_array)
+    ds._set_df_and_weights(main_frame, w_array, addit=addit_frame)
     return ds
 
 

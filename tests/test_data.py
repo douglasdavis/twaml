@@ -100,10 +100,19 @@ def test_addit_weights():
     assert dsc.weight_name == 'phi_lep2'
 
     pl2 = uproot.open('tests/data/test_file.root')['WtLoop_nominal'].array('phi_lep2')
+    nw2 = uproot.open('tests/data/test_file.root')['WtLoop_nominal'].array('weight_nominal')
     ds2.change_weights('phi_lep2')
     np.testing.assert_array_almost_equal(ds2.weights, pl2, 5)
     assert 'phi_lep2' not in ds2.addit_weights
     assert 'weight_nominal' in ds2.addit_weights
+
+    ds2.to_pytables('outfile1.h5')
+    ds2pt = pytables_dataset('outfile1.h5', 'ds2', weight_name='phi_lep2')
+    print(ds2pt.addit_weights)
+    np.testing.assert_array_almost_equal(ds2pt.addit_weights['weight_nominal'].values,
+                                         nw2)
+    os.remove('outfile1.h5')
+    assert True
 
 
 def test_label():
