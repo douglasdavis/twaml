@@ -34,6 +34,8 @@ class dataset:
       The array of event weights
     df: pandas.DataFrame
       The payload of the class, a dataframe
+    additional_weights: Optional[pandas.DataFrame]
+      Additional weights to have access too
     label: Optional[int]
       Optional dataset label (as an int)
     has_payload: bool
@@ -59,8 +61,9 @@ class dataset:
         label: Optional[int]
           Give dataset an integer based label
         """
-        self._weights = pd.DataFrame({})
-        self._df = np.array([])
+        self._weights = np.array([])
+        self._df = pd.DataFrame({})
+        self._addit_weights = None
         self.files = [PosixPath(f) for f in input_files]
         for f in self.files:
             assert f.exists(), '{} does not exist'.format(f)
@@ -97,6 +100,16 @@ class dataset:
         self._weights = new
 
     @property
+    def addit_weights(self) -> pd.DataFrame:
+        return self._addit_weights
+
+    @addit_weights.setter
+    def addit_weights(self, new: pd.DataFrame) -> None:
+        if new is not None:
+            assert len(new) == len(self._df), 'addit_weights length != frame length'
+        self._addit_weights = new
+
+    @property
     def label(self) -> Optional[int]:
         return self._label
 
@@ -119,16 +132,75 @@ class dataset:
     def shape(self, new) -> None:
         raise NotImplementedError('Cannot set shape manually')
 
-    def _set_df_and_weights(self, df: pd.DataFrame, w: np.ndarray) -> None:
+    def _set_df_and_weights(self, df: pd.DataFrame, w: np.ndarray,
+                            addit: Optional[pd.DataFrame] = None) -> None:
         assert len(df) == len(w), 'unequal length df and weights'
         self._df = df
         self._weights = w
+        if addit is not None:
+            assert len(df) == len(addit), 'unequal length df and addit weights'
+            self._addit_weights = addit
+
+    def rm_weight_branches(self) -> None:
+        """Remove all columns which begin with ``weight_``
+
+        If you are reading a dataset that was created retaining
+        weights in the main payload, this is a useful function to
+        remove them. The design of ``twaml.data.dataset`` expects
+        weights to be separated from the payload's main dataframe.
+
+        Internally this is done by calling
+        ``pd.DataFrame.drop(..., inplace=True)`` on the payload
+
+        """
+        import re
+        pat = re.compile('^weight_')
+        rmthese = [c for c in self._df.columns if re.match(pat, c)]
+        self._df.drop(columns=rmthese, inplace=True)
+
+    def rm_columns_re(self, cols: List[str]) -> None:
+        """Remove some columns from the payload based on regex paterns
+
+        Parameters
+        ----------
+        cols : List[str]
+          List of regex paterns
+
+        Uses ``pd.DataFrame.drop(..., inplace=True)``.
+        """
+        import re
+        for rm in cols:
+            pat = re.compile(rm)
+            rmthese = [c for c in self._df.columns if re.search(pat, c)]
+            self._df.drop(columns=rmthese, inplace=True)
+
+    def change_weights(self, wname: str) -> None:
+        """Change the main weight of the dataset
+
+        this function will swap the current main weight array of the
+        dataset with one in the addit_weights frame.
+        """
+        assert self._addit_weights is not None, 'additional weights do not exist'
+
+        old_name = self.weight_name
+        old_weights = self.weights
+        self._addit_weights[old_name] = old_weights
+
+        self.weights = self._addit_weights[wname].values
+        self.weight_name = wname
+
+        self._addit_weights.drop(columns=[wname], inplace=True)
+
 
     def append(self, other: 'dataset') -> None:
+
         """Append a dataset to an exiting one
 
         We perform concatenations of the dataframes and weights to
         update the existing dataset's payload.
+
+        if one dataset has additional weights and the other doesn't,
+        the additional weights are dropped.
 
         Parameters
         ----------
@@ -140,9 +212,19 @@ class dataset:
         assert other.has_payload, 'Unconstructed df (other)'
         assert self.weight_name == other.weight_name, 'different weight names'
         assert self.shape[1] == other.shape[1], 'different df columns'
+
+        if self.addit_weights is not None and other.addit_weights is not None:
+            assert self.addit_weights.shape[1] == other.addit_weights.shape[1], \
+                'additional weights are different lengths'
+
         self._df = pd.concat([self._df, other.df])
         self._weights = np.concatenate([self._weights, other.weights])
         self.files = self.files + other.files
+
+        if self.addit_weights is not None and other.addit_weights is not None:
+            self._addit_weights = pd.concat([self._addit_weights, other.addit_weights])
+        else:
+            self._addit_weights = None
 
     def to_pytables(self, file_name: str) -> None:
         """Write payload to disk as an pytables h5 file with strict options
@@ -169,17 +251,31 @@ class dataset:
         We perform concatenations of the dataframes and weights to
         generate a new dataset with the combined a new payload.
 
+        if one dataset has additional weights and the other doesn't,
+        the additional weights are dropped.
+
         """
         assert self.has_payload, 'Unconstructed df (self)'
         assert other.has_payload, 'Unconstructed df (other)'
         assert self.weight_name == other.weight_name, 'different weight names'
         assert self.shape[1] == other.shape[1], 'different df columns'
+
+        if self.addit_weights is not None and other.addit_weights is not None:
+            assert self.addit_weights.shape[1] == other.addit_weights.shape[1], \
+                'additional weights are different lengths'
+
         new_weights = np.concatenate([self.weights, other.weights])
         new_df = pd.concat([self.df, other.df])
         new_files = [str(f) for f in (self.files + other.files)]
         new_ds = dataset(new_files, self.name, weight_name=self.weight_name,
                          tree_name=self.tree_name, label=self.label)
-        new_ds._set_df_and_weights(new_df, new_weights)
+
+        if self.addit_weights is not None and other.addit_weights is not None:
+            new_aw = pd.concat([self.addit_weights, other.addit_weights])
+        else:
+            new_aw = None
+
+        new_ds._set_df_and_weights(new_df, new_weights, addit=new_aw)
         return new_ds
 
     def __len__(self) -> int:
@@ -200,7 +296,9 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
                  weight_name: str = 'weight_nominal',
                  branches: List[str] = None,
                  selection: Dict = None,
-                 label: Optional[int] = None) -> dataset:
+                 label: Optional[int] = None,
+                 ignore_weights: bool = True,
+                 addit_weights: Optional[List[str]] = None) -> dataset:
     """Create a ROOT dataset
 
     Parameters
@@ -221,6 +319,10 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
         selections are combined using ``np.logical_and``
     label: Optional[int]
         Give the dataset an integer label
+    ignore_weights: bool
+        Ignore all "^weight" branches when constructing the main payload
+    addit_weights: Optional[List[str]]
+        Additional weights to store in a second dataframe
 
     Examples
     --------
@@ -246,10 +348,14 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
     uproot_trees = [uproot.open(file_name)[tree_name]
                     for file_name in input_files]
 
-    weight_list, frame_list = [], []
+    weight_list, frame_list, addit_frame_list = [], [], []
     for t in uproot_trees:
         raw_w = t.array(weight_name)
         raw_f = t.pandas.df(branches=branches, namedecode='utf-8')
+
+        if addit_weights is not None:
+            raw_a = t.pandas.df(branches=addit_weights, namedecode='utf-8')
+
         isel = np.ones((raw_w.shape[0]), dtype=bool)
         if selection is not None:
             selections = {k: v[0](t.array(k), v[1]) for k, v
@@ -258,9 +364,22 @@ def root_dataset(input_files: List[str], name: Optional[str] = None,
                 isel = np.logical_and(isel, v)
         weight_list.append(raw_w[isel])
         frame_list.append(raw_f[isel])
+        if addit_weights is not None:
+            addit_frame_list.append(raw_a[isel])
+
+
     weights_array = np.concatenate(weight_list)
     df = pd.concat(frame_list)
-    ds._set_df_and_weights(df, weights_array)
+    if addit_weights is not None:
+        aw_df = pd.concat(addit_frame_list)
+    else:
+        aw_df = None
+
+    ds._set_df_and_weights(df, weights_array, addit=aw_df)
+
+    if ignore_weights:
+        ds.rm_weight_branches()
+
     return ds
 
 

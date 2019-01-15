@@ -79,6 +79,33 @@ def test_append():
                                          ds1.df.get_values(), 5)
 
 
+def test_addit_weights():
+    branches = ['pT_lep1', 'pT_lep2', 'eta_lep1', 'eta_lep2']
+    ds1 = root_dataset(['tests/data/test_file.root'], name='myds',
+                       branches=branches, addit_weights=['phi_lep1','phi_lep2'])
+    ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
+                       branches=branches, addit_weights=['phi_lep1','phi_lep2'])
+    ds1.append(ds2)
+
+    dsa = root_dataset(['tests/data/test_file.root'], name='myds',
+                       branches=branches, addit_weights=['phi_lep1','phi_lep2'])
+    dsb = root_dataset(['tests/data/test_file.root'], name='ds2',
+                       branches=branches, addit_weights=['phi_lep1','phi_lep2'])
+    dsc = dsa + dsb
+
+    np.testing.assert_array_almost_equal(ds1.addit_weights['phi_lep1'],
+                                         dsc.addit_weights['phi_lep1'], 5)
+
+    dsc.change_weights('phi_lep2')
+    assert dsc.weight_name == 'phi_lep2'
+
+    pl2 = uproot.open('tests/data/test_file.root')['WtLoop_nominal'].array('phi_lep2')
+    ds2.change_weights('phi_lep2')
+    np.testing.assert_array_almost_equal(ds2.weights, pl2, 5)
+    assert 'phi_lep2' not in ds2.addit_weights
+    assert 'weight_nominal' in ds2.addit_weights
+
+
 def test_label():
     ds2 = root_dataset(['tests/data/test_file.root'], name='ds2',
                        branches=branches)
