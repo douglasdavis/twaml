@@ -74,19 +74,19 @@ def test_append():
     np.testing.assert_array_almost_equal(comb_df.get_values(), ds1.df.get_values(), 5)
 
 
-def test_addit_weights():
+def test_extra_weights():
     branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
     ds1 = root_dataset(
         ["tests/data/test_file.root"],
         name="myds",
         branches=branches,
-        addit_weights=["phi_lep1", "phi_lep2"],
+        extra_weights=["phi_lep1", "phi_lep2"],
     )
     ds2 = root_dataset(
         ["tests/data/test_file.root"],
         name="ds2",
         branches=branches,
-        addit_weights=["phi_lep1", "phi_lep2"],
+        extra_weights=["phi_lep1", "phi_lep2"],
     )
     ds1.append(ds2)
 
@@ -94,18 +94,18 @@ def test_addit_weights():
         ["tests/data/test_file.root"],
         name="myds",
         branches=branches,
-        addit_weights=["phi_lep1", "phi_lep2"],
+        extra_weights=["phi_lep1", "phi_lep2"],
     )
     dsb = root_dataset(
         ["tests/data/test_file.root"],
         name="ds2",
         branches=branches,
-        addit_weights=["phi_lep1", "phi_lep2"],
+        extra_weights=["phi_lep1", "phi_lep2"],
     )
     dsc = dsa + dsb
 
     np.testing.assert_array_almost_equal(
-        ds1.addit_weights["phi_lep1"], dsc.addit_weights["phi_lep1"], 5
+        ds1.extra_weights["phi_lep1"], dsc.extra_weights["phi_lep1"], 5
     )
 
     dsc.change_weights("phi_lep2")
@@ -117,14 +117,14 @@ def test_addit_weights():
     )
     ds2.change_weights("phi_lep2")
     np.testing.assert_array_almost_equal(ds2.weights, pl2, 5)
-    assert "phi_lep2" not in ds2.addit_weights
-    assert "weight_nominal" in ds2.addit_weights
+    assert "phi_lep2" not in ds2.extra_weights
+    assert "weight_nominal" in ds2.extra_weights
 
     ds2.to_pytables("outfile1.h5")
     ds2pt = pytables_dataset("outfile1.h5", "ds2", weight_name="phi_lep2")
-    print(ds2pt.addit_weights)
+    print(ds2pt.extra_weights)
     np.testing.assert_array_almost_equal(
-        ds2pt.addit_weights["weight_nominal"].values, nw2
+        ds2pt.extra_weights["weight_nominal"].values, nw2
     )
     os.remove("outfile1.h5")
     assert True
