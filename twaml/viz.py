@@ -13,10 +13,16 @@ from typing import List, Optional, Tuple
 import numpy as np
 import math
 
-def compare_distributions(dist1, dist2, bins: Optional[np.ndarray] = None,
-                          titles: List[str] = ['dist1', 'dist2'],
-                          colors: List[str] = ['C0', 'C1'], ratio: bool = True,
-                          **subplots_kw):
+
+def compare_distributions(
+    dist1,
+    dist2,
+    bins: Optional[np.ndarray] = None,
+    titles: List[str] = ["dist1", "dist2"],
+    colors: List[str] = ["C0", "C1"],
+    ratio: bool = True,
+    **subplots_kw,
+):
     """Compare two histogrammed distributons with matplotlib
 
     Parameters
@@ -49,35 +55,46 @@ def compare_distributions(dist1, dist2, bins: Optional[np.ndarray] = None,
       the return of ``matplotlib.axes.Axes.hist`` for dist2
     """
     if ratio:
-        fig, ax = plt.subplots(2, 1, sharex=True,
-                               gridspec_kw=dict(
-                                   height_ratios=[3, 1], hspace=.025
-                               ), **subplots_kw)
-        h1 = ax[0].hist(dist1, bins=bins,  histtype='step', label=titles[0],
-                        color=colors[0])
-        h2 = ax[0].hist(dist2, bins=h1[1], histtype='step', label=titles[1],
-                        color=colors[1])
-        centers = np.delete(h1[1], [0])-(np.ediff1d(h1[1])/2.0)
-        ax[1].plot(centers, h1[0]/h2[0], 'k-')
-        ax[1].plot([centers[0] - 10e3, centers[1] + 10e3], np.ones(2), 'k--')
+        fig, ax = plt.subplots(
+            2,
+            1,
+            sharex=True,
+            gridspec_kw=dict(height_ratios=[3, 1], hspace=0.025),
+            **subplots_kw,
+        )
+        h1 = ax[0].hist(
+            dist1, bins=bins, histtype="step", label=titles[0], color=colors[0]
+        )
+        h2 = ax[0].hist(
+            dist2, bins=h1[1], histtype="step", label=titles[1], color=colors[1]
+        )
+        centers = np.delete(h1[1], [0]) - (np.ediff1d(h1[1]) / 2.0)
+        ax[1].plot(centers, h1[0] / h2[0], "k-")
+        ax[1].plot([centers[0] - 10e3, centers[1] + 10e3], np.ones(2), "k--")
         ax[1].set_ylim([0, 2])
         ax[1].set_xlim([h1[1][0], h1[1][-1]])
     else:
         fig, ax = plt.subplots(**subplots_kw)
-        h1 = ax.hist(dist1, bins=bins,  histtype='step', label=titles[0],
-                     color=colors[0])
-        h2 = ax.hist(dist2, bins=h1[1], histtype='step', label=titles[1],
-                     color=colors[1])
+        h1 = ax.hist(
+            dist1, bins=bins, histtype="step", label=titles[0], color=colors[0]
+        )
+        h2 = ax.hist(
+            dist2, bins=h1[1], histtype="step", label=titles[1], color=colors[1]
+        )
         ax.set_xlim([h1[1][0], h1[1][-1]])
 
     return fig, ax, h1, h2
 
 
-def compare_columns(ds1: dataset, ds2: dataset,
-                    columns: Optional[List[str]] = None,
-                    names: Optional[Tuple[str]] = None,
-                    colors: Optional[Tuple[str]] = None,
-                    density=True, **subplots_kw):
+def compare_columns(
+    ds1: dataset,
+    ds2: dataset,
+    columns: Optional[List[str]] = None,
+    names: Optional[Tuple[str, str]] = None,
+    colors: Optional[Tuple[str, str]] = None,
+    density=True,
+    **subplots_kw,
+):
     """generate a set of histograms comparing the distributions of a set
     of columns in two different datasets.
 
@@ -89,9 +106,9 @@ def compare_columns(ds1: dataset, ds2: dataset,
         The second dataset
     columns: Optional[List[str]]
         Columns to plot; if None, plot all
-    names: Optional[Tuple[str]]
+    names: Optional[Tuple[str,str]]
         Names for the legend, if None use the dataset ``name`` attributes
-    colors: Optional[Tuple[str]]
+    colors: Optional[Tuple[str,str]]
         Colors for the histograms
     density: bool
         Feed to ``density`` parameter in ``matplotlib.pyplot.hist``
@@ -102,17 +119,17 @@ def compare_columns(ds1: dataset, ds2: dataset,
     col1 = list(ds1.df.columns)
     col2 = list(ds2.df.columns)
     if columns is None:
-        assert col1 == col2, 'different columns'
+        assert col1 == col2, "different columns"
         cols = col1
     else:
         cols = columns
         for c in cols:
-            assert c in col1, f'{c} column not in ds1'
-            assert c in col2, f'{c} column not in ds2'
+            assert c in col1, f"{c} column not in ds1"
+            assert c in col2, f"{c} column not in ds2"
     if names is None:
         names = (ds1.name, ds2.name)
     if colors is None:
-        colors = ('C0', 'C1')
+        colors = ("C0", "C1")
 
     dim = math.sqrt(len(cols))
     dim1 = int(dim)
@@ -129,13 +146,22 @@ def compare_columns(ds1: dataset, ds2: dataset,
         print(dist1.dtype, dist2.dtype)
         xmin = min(np.min(dist1), np.min(dist2))
         xmax = max(np.max(dist1), np.max(dist1))
-        if dist1.dtype == np.dtype('i4') or dist1.dtype == np.dtype('i8') or \
-           dist1.dtype == np.dtype('u4') or dist1.dtype == np.dtype('u8'):
+        if (
+            dist1.dtype == np.dtype("i4")
+            or dist1.dtype == np.dtype("i8")
+            or dist1.dtype == np.dtype("u4")
+            or dist1.dtype == np.dtype("u8")
+        ):
             nbins = xmax - xmin
-            xmax = xmax+0.5
-            xmin = xmin-0.5
+            xmax = xmax + 0.5
+            xmin = xmin - 0.5
         else:
             nbins = 50
-        a.hist([dist1, dist2], bins=np.linspace(xmin, xmax, nbins+1),
-               weights=[w1, w2], density=density, histtype='step')
-    fig.savefig(f'{ds1.name}_{ds2.name}.pdf')
+        a.hist(
+            [dist1, dist2],
+            bins=np.linspace(xmin, xmax, nbins + 1),
+            weights=[w1, w2],
+            density=density,
+            histtype="step",
+        )
+    fig.savefig(f"{ds1.name}_{ds2.name}.pdf")

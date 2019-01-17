@@ -3,4 +3,5 @@
                  (python-shell-interpreter . "~/Software/Python/anaconda3/envs/twaml/bin/python")
                  ;;(py-shell-name . "~/Software/Python/anaconda3/envs/twaml/bin/python")
                  ;;(py-ipython-command . "~/Software/Python/anaconda3/envs/twaml/bin/ipython")
+                 (eval add-hook 'before-save-hook #'eglot-format)
                  )))
