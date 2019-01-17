@@ -54,11 +54,11 @@ def root_to_pytables():
         help="weight branch name",
     )
     parser.add_argument(
-        "--addit-weights",
+        "--extra-weights",
         type=str,
         nargs="+",
         required=False,
-        help="additional weights to save",
+        help="extra weights to save",
     )
     parser.add_argument(
         "--true-branches",
@@ -70,7 +70,7 @@ def root_to_pytables():
     parser.add_argument(
         "--detect-weights",
         action="store_true",
-        help=("detect weights in the dataset, " "--addit-weights overrides this"),
+        help=("detect weights in the dataset, " "--extra-weights overrides this"),
     )
     args = parser.parse_args()
     sel_dict = None
@@ -84,7 +84,7 @@ def root_to_pytables():
         weight_name=args.weight_name,
         selection=sel_dict,
         branches=args.branches,
-        addit_weights=args.addit_weights,
+        extra_weights=args.extra_weights,
         detect_weights=args.detect_weights,
     )
     ds.to_pytables(args.out)
