@@ -4,7 +4,7 @@ twaml command line applications
 
 import argparse
 import numpy as np
-from twaml.data import root_dataset
+from twaml.data import dataset
 
 
 def root_to_pytables():
@@ -77,7 +77,7 @@ def root_to_pytables():
     if args.true_branches is not None:
         sel_dict = {bn: (np.equal, True) for bn in args.true_branches}
 
-    ds = root_dataset(
+    ds = dataset.from_root(
         args.input_files,
         name=args.name,
         tree_name=args.tree_name,

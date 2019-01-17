@@ -20,27 +20,6 @@ Classes
 
    .. automethod:: __add__
 
-Dataset Building Functions
---------------------------
-
-.. currentmodule:: twaml.data
-
-
-``twaml.data.root_dataset``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: root_dataset
-
-``twaml.data.pytables_dataset``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: pytables_dataset
-
-``twaml.data.h5_dataset``
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: h5_dataset
-
 
 Helper Functions
 ----------------

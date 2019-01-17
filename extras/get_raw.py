@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
 import xgboost as xgb
-from twaml.data import h5_dataset, pytables_dataset
+from twaml.data import dataset
 from twaml.data import scale_weight_sum
 import matplotlib.pyplot as plt
 
@@ -16,34 +16,34 @@ def gen_combined():
         "mass_lep2jet1",
         "mass_lep1jet2",
     ]
-    ttbar1 = h5_dataset(
+    ttbar1 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tt_a.h5", "ttbar", branches, label=0
     )
-    ttbar2 = h5_dataset(
+    ttbar2 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tt_d.h5", "ttbar", branches, label=0
     )
-    tW_DR1 = h5_dataset(
+    tW_DR1 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DR_48_a.h5", "tW_DR", branches, label=0
     )
-    tW_DR2 = h5_dataset(
+    tW_DR2 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DR_48_d.h5", "tW_DR", branches, label=0
     )
-    tW_DR3 = h5_dataset(
+    tW_DR3 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DR_49_a.h5", "tW_DR", branches, label=0
     )
-    tW_DR4 = h5_dataset(
+    tW_DR4 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DR_49_d.h5", "tW_DR", branches, label=0
     )
-    tW_DS1 = h5_dataset(
+    tW_DS1 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DS_56_a.h5", "tW_DS", branches, label=0
     )
-    tW_DS2 = h5_dataset(
+    tW_DS2 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DS_56_d.h5", "tW_DS", branches, label=0
     )
-    tW_DS3 = h5_dataset(
+    tW_DS3 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DS_57_a.h5", "tW_DS", branches, label=0
     )
-    tW_DS4 = h5_dataset(
+    tW_DS4 = dataset.from_h5(
         "/Users/ddavis/Desktop/h5files/tW_DS_57_d.h5", "tW_DS", branches, label=0
     )
     ttbar = ttbar1 + ttbar2
@@ -55,9 +55,9 @@ def gen_combined():
 
 
 def get_combined():
-    ttbar = pytables_dataset("ttbar.h5", "ttbar", label=0)
-    tW_DR = pytables_dataset("tW_DR.h5", "tW_DR", label=0)
-    tW_DS = pytables_dataset("tW_DS.h5", "tW_DS", label=1)
+    ttbar = dataset.from_pytables("ttbar.h5", "ttbar", label=0)
+    tW_DR = dataset.from_pytables("tW_DR.h5", "tW_DR", label=0)
+    tW_DS = dataset.from_pytables("tW_DS.h5", "tW_DS", label=1)
     scale_weight_sum(tW_DR, ttbar)
     scale_weight_sum(tW_DS, ttbar)
     tW_DR.weights *= 0.5

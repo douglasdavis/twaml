@@ -1,4 +1,4 @@
-from twaml.data import root_dataset, h5_dataset
+from twaml.data import dataset
 from twaml.utils import SD_2J2B, SD_2J1B, SD_1J1B
 
 BRANCHES_1J1B = [
@@ -89,7 +89,7 @@ def create_h5_from_root(regions, base_dir):
         else:
             raise ValueError("invalid region: {}", region)
 
-        ttbar_rds = root_dataset(
+        ttbar_rds = dataset.from_root(
             ttbar_files,
             name="ttbar_{}".format(region),
             select=select,
@@ -97,7 +97,7 @@ def create_h5_from_root(regions, base_dir):
             label=0,
             force_construct=True,
         )
-        tW_DR_rds = root_dataset(
+        tW_DR_rds = dataset.from_root(
             tW_DR_files,
             name="tW_DR_{}".format(region),
             select=select,
@@ -105,7 +105,7 @@ def create_h5_from_root(regions, base_dir):
             label=0,
             force_construct=True,
         )
-        tW_DS_rds = root_dataset(
+        tW_DS_rds = dataset.from_root(
             tW_DS_files,
             name="tW_DS_{}".format(region),
             select=select,
@@ -120,9 +120,9 @@ def create_h5_from_root(regions, base_dir):
 
 
 def read_h5_datasets():
-    ttbar_ds = h5_dataset("ttbar.h5", name="ttbar", label=0, force_construct=True)
-    tW_DR_ds = h5_dataset("tW_DR.h5", name="tW_DR", label=0, force_construct=True)
-    tW_DS_ds = h5_dataset("tW_DS.h5", name="tW_DS", label=1, force_construct=True)
+    ttbar_ds = dataset.from_h5("ttbar.h5", name="ttbar", label=0)
+    tW_DR_ds = dataset.from_h5("tW_DR.h5", name="tW_DR", label=0)
+    tW_DS_ds = dataset.from_h5("tW_DS.h5", name="tW_DS", label=1)
 
     return ttbar_ds, tW_DR_ds, tW_DS_ds
 

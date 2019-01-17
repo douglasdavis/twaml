@@ -2,12 +2,12 @@ import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
 import xgboost as xgb
-from twaml.data import pytables_dataset
+from twaml.data import dataset
 from twaml.data import scale_weight_sum
 import matplotlib.pyplot as plt
 
-ttbar = pytables_dataset("ttbar_1j1b.h5", "ttbar_1j1b", label=0)
-tW_DR = pytables_dataset("tW_DR_1j1b.h5", "tW_DR_1j1b", label=1)
+ttbar = dataset.from_pytables("ttbar_1j1b.h5", "ttbar_1j1b", label=0)
+tW_DR = dataset.from_pytables("tW_DR_1j1b.h5", "tW_DR_1j1b", label=1)
 sow = ttbar.weights.sum() + tW_DR.weights.sum()
 mwfl = sow * 0.01
 scale_weight_sum(tW_DR, ttbar)

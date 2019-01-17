@@ -16,13 +16,7 @@ import re
 from pathlib import PosixPath
 from typing import List, Dict, Tuple, Optional
 
-__all__ = [
-    "dataset",
-    "root_dataset",
-    "h5_dataset",
-    "pytables_dataset",
-    "scale_weight_sum",
-]
+__all__ = ["dataset", "scale_weight_sum"]
 
 
 class dataset:
@@ -328,224 +322,223 @@ class dataset:
         """standard str"""
         return "dataset(name={})".format(self.name)
 
+    @staticmethod
+    def from_root(
+        input_files: List[str],
+        name: Optional[str] = None,
+        tree_name: str = "WtLoop_nominal",
+        weight_name: str = "weight_nominal",
+        branches: List[str] = None,
+        selection: Dict = None,
+        label: Optional[int] = None,
+        allow_weights_in_df: bool = False,
+        extra_weights: Optional[List[str]] = None,
+        detect_weights: bool = False,
+    ) -> "dataset":
+        """Create a dataset from ROOT files
 
-def root_dataset(
-    input_files: List[str],
-    name: Optional[str] = None,
-    tree_name: str = "WtLoop_nominal",
-    weight_name: str = "weight_nominal",
-    branches: List[str] = None,
-    selection: Dict = None,
-    label: Optional[int] = None,
-    allow_weights_in_df: bool = False,
-    extra_weights: Optional[List[str]] = None,
-    detect_weights: bool = False,
-) -> dataset:
-    """Create a ROOT dataset
+        Parameters
+        ----------
+        input_files: List[str]
+          List of ROOT input_files to use
+        name: str
+          Name of the dataset (if none use first file name)
+        tree_name: str
+          Name of the tree in the file to use
+        weight_name: str
+          Name of the weight branch
+        branches: List[str]
+          List of branches to store in the dataset, if None use all
+        selection: Dict
+          A dictionary of selections to apply of the form:
+          ``{branch_name: (numpy.ufunc, test_value)}``. the
+          selections are combined using ``np.logical_and``
+        label: Optional[int]
+          Give the dataset an integer label
+        allow_weights_in_df: bool
+          Allow "^weight_" branches in the payload dataframe
+        extra_weights: Optional[List[str]]
+          Extra weights to store in a second dataframe.
+        detect_weights: bool
+          If True, fill the extra_weights df with all "^weight_"
+          branches If ``extra_weights`` is not None, this option is
+          ignored.
 
-    Parameters
-    ----------
-    input_files: List[str]
-        List of ROOT input_files to use
-    name: str
-        Name of the dataset (if none use first file name)
-    tree_name: str
-        Name of the tree in the file to use
-    weight_name: str
-        Name of the weight branch
-    branches: List[str]
-        List of branches to store in the dataset, if None use all
-    selection: Dict
-        A dictionary of selections to apply of the form:
-        ``{branch_name: (numpy.ufunc, test_value)}``. the
-        selections are combined using ``np.logical_and``
-    label: Optional[int]
-        Give the dataset an integer label
-    allow_weights_in_df: bool
-        Allow "^weight_" branches in the payload dataframe
-    extra_weights: Optional[List[str]]
-        Extra weights to store in a second dataframe.
-    detect_weights: bool
-        If True, fill the extra_weights df with all "^weight_"
-        branches If ``extra_weights`` is not None, this option is
-        ignored.
+        Examples
+        --------
+        Example with a single file and two branches:
 
-    Examples
-    --------
-    Example with a single file and two branches:
+        >>> ds1 = root_dataset(['file.root'], name='myds',
+        ...                    branches=['pT_lep1', 'pT_lep2'], label=1)
 
-    >>> ds1 = root_dataset(['file.root'], name='myds',
-    ...                    branches=['pT_lep1', 'pT_lep2'], label=1)
+        Example with multiple input_files and a selection (uses all
+        branches). The selection requires the branch ``nbjets == 1``
+        and ``njets >= 1``, then label it 5.
 
-    Example with multiple input_files and a selection (uses all
-    branches). The selection requires the branch ``nbjets == 1``
-    and ``njets >= 1``, then label it 5.
+        >>> flist = ['file1.root', 'file2.root', 'file3.root']
+        >>> ds = root_dataset(flist, selection={'nbjets': (np.equal, 1),
+        ...                                     'njets': (np.greater, 1)}
+        >>> ds.label = 5
 
-    >>> flist = ['file1.root', 'file2.root', 'file3.root']
-    >>> ds = root_dataset(flist, selection={'nbjets': (np.equal, 1),
-    ...                                     'njets': (np.greater, 1)}
-    >>> ds.label = 5
+        Example using extra weights
 
-    Example using extra weights
+        >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
+        ...                   extra_weights=['weight_sys_radLo', ' weight_sys_radHi'])
 
-    >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
-    ...                   extra_weights=['weight_sys_radLo', ' weight_sys_radHi'])
+        Example where we detect extra weights automatically
 
+        >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
+        ...                   detect_weights=True)
 
-    Example where we detect extra weights automatically
+        """
 
-    >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
-    ...                   detect_weights=True)
+        ds = dataset(
+            input_files, name, tree_name=tree_name, weight_name=weight_name, label=label
+        )
 
-    """
-    ds = dataset(
-        input_files, name, tree_name=tree_name, weight_name=weight_name, label=label
-    )
+        uproot_trees = [uproot.open(file_name)[tree_name] for file_name in input_files]
 
-    uproot_trees = [uproot.open(file_name)[tree_name] for file_name in input_files]
+        wpat = re.compile("^weight_")
+        if extra_weights is not None:
+            w_branches = extra_weights
+        elif detect_weights:
+            urtkeys = [k.decode("utf-8") for k in uproot_trees[0].keys()]
+            w_branches = [k for k in urtkeys if re.match(wpat, k)]
+            if weight_name in w_branches:
+                w_branches.remove(weight_name)
+        else:
+            w_branches = None
 
-    wpat = re.compile("^weight_")
-    if extra_weights is not None:
-        w_branches = extra_weights
-    elif detect_weights:
-        urtkeys = [k.decode("utf-8") for k in uproot_trees[0].keys()]
-        w_branches = [k for k in urtkeys if re.match(wpat, k)]
-        if weight_name in w_branches:
-            w_branches.remove(weight_name)
-    else:
-        w_branches = None
+        weight_list, frame_list, extra_frame_list = [], [], []
+        for t in uproot_trees:
+            raw_w = t.array(weight_name)
+            raw_f = t.pandas.df(branches=branches, namedecode="utf-8")
+            if not allow_weights_in_df:
+                rmthese = [c for c in raw_f.columns if re.match(wpat, c)]
+                raw_f.drop(columns=rmthese, inplace=True)
 
-    weight_list, frame_list, extra_frame_list = [], [], []
-    for t in uproot_trees:
-        raw_w = t.array(weight_name)
-        raw_f = t.pandas.df(branches=branches, namedecode="utf-8")
-        if not allow_weights_in_df:
-            rmthese = [c for c in raw_f.columns if re.match(wpat, c)]
-            raw_f.drop(columns=rmthese, inplace=True)
+            if w_branches is not None:
+                raw_aw = t.pandas.df(branches=w_branches, namedecode="utf-8")
 
+            isel = np.ones((raw_w.shape[0]), dtype=bool)
+            if selection is not None:
+                selections = {k: v[0](t.array(k), v[1]) for k, v in selection.items()}
+                for k, v in selections.items():
+                    isel = np.logical_and(isel, v)
+            weight_list.append(raw_w[isel])
+            frame_list.append(raw_f[isel])
+            if w_branches is not None:
+                extra_frame_list.append(raw_aw[isel])
+
+        weights_array = np.concatenate(weight_list)
+        df = pd.concat(frame_list)
         if w_branches is not None:
-            raw_aw = t.pandas.df(branches=w_branches, namedecode="utf-8")
+            aw_df = pd.concat(extra_frame_list)
+        else:
+            aw_df = None
 
-        isel = np.ones((raw_w.shape[0]), dtype=bool)
-        if selection is not None:
-            selections = {k: v[0](t.array(k), v[1]) for k, v in selection.items()}
-            for k, v in selections.items():
-                isel = np.logical_and(isel, v)
-        weight_list.append(raw_w[isel])
-        frame_list.append(raw_f[isel])
-        if w_branches is not None:
-            extra_frame_list.append(raw_aw[isel])
+        ds._set_df_and_weights(df, weights_array, extra=aw_df)
+        return ds
 
-    weights_array = np.concatenate(weight_list)
-    df = pd.concat(frame_list)
-    if w_branches is not None:
-        aw_df = pd.concat(extra_frame_list)
-    else:
-        aw_df = None
+    @staticmethod
+    def from_pytables(
+        file_name: str,
+        name: str,
+        tree_name: str = "WtLoop_nominal",
+        weight_name: str = "weight_nominal",
+        label: Optional[int] = None,
+    ) -> "dataset":
+        """Create an h5 dataset from pytables output generated from
+        dataset.to_pytables
 
-    ds._set_df_and_weights(df, weights_array, extra=aw_df)
+        The payload is extracted from the .h5 pytables files using the
+        name of the dataset and the weight name. If the name of the
+        dataset doesn't exist in the file you'll crash. Extra weights
+        are retrieved if available.
 
-    return ds
+        Parameters
+        ----------
+        file_name: str
+          Name of h5 file containing the payload
+        name: str
+          Name of the dataset inside the h5 file
+        tree_name: str
+          Name of tree where dataset originated
+        weight_name: str
+          Name of the weight array inside the h5 file
+        label: Optional[int]
+          Give the dataset an integer label
 
+        Examples
+        --------
 
-def pytables_dataset(
-    file_name: str,
-    name: str,
-    tree_name: str = "WtLoop_nominal",
-    weight_name: str = "weight_nominal",
-    label: Optional[int] = None,
-) -> dataset:
-    """Create an h5 dataset from pytables output generated from
-    dataset.to_pytables
+        >>> ds1 = pytables_dataset('ttbar.h5', 'ttbar')
+        >>> ds1.label = 1 ## add label dataset after the fact
 
-    The payload is extracted from the .h5 pytables files using the
-    name of the dataset and the weight name. If the name of the
-    dataset doesn't exist in the file you'll crash. Extra weights
-    are retrieved if available.
+        """
+        main_frame = pd.read_hdf(file_name, name)
+        main_weight_frame = pd.read_hdf(file_name, weight_name)
+        h5f = h5py.File(file_name, "r")
+        if "{}_extra_weights".format(name) in h5f:
+            extra_frame = pd.read_hdf(file_name, "{}_extra_weights".format(name))
+        else:
+            extra_frame = None
+        w_array = main_weight_frame.weights.values
+        ds = dataset(
+            [file_name], name, weight_name=weight_name, tree_name=tree_name, label=label
+        )
+        ds._set_df_and_weights(main_frame, w_array, extra=extra_frame)
+        return ds
 
-    Parameters
-    ----------
-    file_name: str
-        Name of h5 file containing the payload
-    name: str
-        Name of the dataset inside the h5 file
-    tree_name: str
-        Name of tree where dataset originated
-    weight_name: str
-        Name of the weight array inside the h5 file
-    label: Optional[int]
-        Give the dataset an integer label
+    @staticmethod
+    def from_h5(
+        file_name: str,
+        name: str,
+        columns: List[str],
+        tree_name: str = "WtLoop_nominal",
+        weight_name: str = "weight_nominal",
+        label: Optional[int] = None,
+    ) -> "dataset":
+        """Create a dataset from generic h5 input (loosely expected to be from
+        the ATLAS Analysis Release utility ``ttree2hdf5``
 
-    Examples
-    --------
+        The name of the HDF5 dataset inside the file is assumed to be
+        ``tree_name``. The ``name`` argument is something *you
+        choose*.
 
-    >>> ds1 = pytables_dataset('ttbar.h5', 'ttbar')
-    >>> ds1.label = 1 ## add label dataset after the fact
+        Parameters
+        ----------
+        file_name: str
+          Name of h5 file containing the payload
+        name: str
+          Name of the dataset you would like to define
+        columns: List[str]
+          Names of columns (branches) to include in payload
+        tree_name: str
+          Name of tree dataset originates from (HDF5 dataset name)
+        weight_name: str
+          Name of the weight array inside the h5 file
+        label: Optional[int]
+          Give the dataset an integer label
 
-    """
-    main_frame = pd.read_hdf(file_name, name)
-    main_weight_frame = pd.read_hdf(file_name, weight_name)
-    h5f = h5py.File(file_name, "r")
-    if "{}_extra_weights".format(name) in h5f:
-        extra_frame = pd.read_hdf(file_name, "{}_extra_weights".format(name))
-    else:
-        extra_frame = None
-    w_array = main_weight_frame.weights.values
-    ds = dataset(
-        [file_name], name, weight_name=weight_name, tree_name=tree_name, label=label
-    )
-    ds._set_df_and_weights(main_frame, w_array, extra=extra_frame)
-    return ds
+        """
+        ds = dataset(
+            [file_name],
+            name=name,
+            weight_name=weight_name,
+            tree_name=tree_name,
+            label=label,
+        )
 
-
-def h5_dataset(
-    file_name: str,
-    name: str,
-    columns: List[str],
-    tree_name: str = "WtLoop_nominal",
-    weight_name: str = "weight_nominal",
-    label: Optional[int] = None,
-) -> dataset:
-    """Create a dataset from generic h5 input (loosely expected to be from
-    the ATLAS Analysis Release utility ``ttree2hdf5``
-
-    The name of the HDF5 dataset inside the file is assumed to be
-    ``tree_name``. The ``name`` argument is something *you choose*.
-
-    Parameters
-    ----------
-    file_name: str
-        Name of h5 file containing the payload
-    name: str
-        Name of the dataset you would like to define
-    columns: List[str]
-        Names of columns (branches) to include in payload
-    tree_name: str
-        Name of tree dataset originates from (HDF5 dataset name)
-    weight_name: str
-        Name of the weight array inside the h5 file
-    label: Optional[int]
-        Give the dataset an integer label
-
-    """
-    ds = dataset(
-        [file_name],
-        name=name,
-        weight_name=weight_name,
-        tree_name=tree_name,
-        label=label,
-    )
-
-    """Construct the payload from the h5 files"""
-    f = h5py.File(file_name, mode="r")
-    full_ds = f[tree_name]
-    w_array = f[tree_name][weight_name]
-    coldict = {}
-    for col in columns:
-        coldict[col] = full_ds[col]
-    frame = pd.DataFrame(coldict)
-    ds._set_df_and_weights(frame, w_array)
-    return ds
+        f = h5py.File(file_name, mode="r")
+        full_ds = f[tree_name]
+        w_array = f[tree_name][weight_name]
+        coldict = {}
+        for col in columns:
+            coldict[col] = full_ds[col]
+        frame = pd.DataFrame(coldict)
+        ds._set_df_and_weights(frame, w_array)
+        return ds
 
 
 def scale_weight_sum(to_update: "dataset", reference: "dataset") -> None:
