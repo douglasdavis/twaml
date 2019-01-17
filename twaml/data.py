@@ -16,6 +16,14 @@ import re
 from pathlib import PosixPath
 from typing import List, Dict, Tuple, Optional
 
+__all__ = [
+    "dataset",
+    "root_dataset",
+    "h5_dataset",
+    "pytables_dataset",
+    "scale_weight_sum",
+]
+
 
 class dataset:
     """A class to define a dataset with a pandas.DataFrame as the payload
@@ -39,6 +47,8 @@ class dataset:
       Extra weights to have access too
     label: Optional[int]
       Optional dataset label (as an int)
+    label_asarray: Optional[np.ndarray]
+      Optional dataset label (as an array of ints)
     has_payload: bool
       Flag to know that the dataset actually wraps data
     cols: List[str]
@@ -128,7 +138,7 @@ class dataset:
         self._label = new
 
     @property
-    def label_array(self) -> Optional[np.ndarray]:
+    def label_asarray(self) -> Optional[np.ndarray]:
         if self.label is None:
             return None
         return np.ones_like(self.weights, dtype=np.int64) * self.label
