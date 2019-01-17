@@ -6,8 +6,8 @@ from twaml.data import pytables_dataset
 from twaml.data import scale_weight_sum
 import matplotlib.pyplot as plt
 
-ttbar = pytables_dataset('ttbar_1j1b.h5', 'ttbar_1j1b', label=0)
-tW_DR = pytables_dataset('tW_DR_1j1b.h5', 'tW_DR_1j1b', label=1)
+ttbar = pytables_dataset("ttbar_1j1b.h5", "ttbar_1j1b", label=0)
+tW_DR = pytables_dataset("tW_DR_1j1b.h5", "tW_DR_1j1b", label=1)
 sow = ttbar.weights.sum() + tW_DR.weights.sum()
 mwfl = sow * 0.01
 scale_weight_sum(tW_DR, ttbar)
@@ -28,14 +28,18 @@ for train_idx, test_idx in folder.split(X):
     y_train, y_test = y[train_idx], y[test_idx]
     w_train, w_test = w[train_idx], w[test_idx]
 
-    param = {'max_depth': 4, 'n_estimators': 150, 'min_child_weight': mwfl}
-    param['nthread'] = 4
-    param['eval_metric'] = 'auc'
+    param = {"max_depth": 4, "n_estimators": 150, "min_child_weight": mwfl}
+    param["nthread"] = 4
+    param["eval_metric"] = "auc"
     model = xgb.XGBClassifier(**param)
-    model.fit(X_train, y_train, sample_weight=w_train,
-              eval_set=[(X_train, y_train), (X_test, y_test)],
-              eval_metric='logloss',
-              verbose=False)
+    model.fit(
+        X_train,
+        y_train,
+        sample_weight=w_train,
+        eval_set=[(X_train, y_train), (X_test, y_test)],
+        eval_metric="logloss",
+        verbose=False,
+    )
     # print(model.evals_result())
     predictions = model.predict(X_test)
     predict_pro = model.predict_proba(X_test)
@@ -48,10 +52,22 @@ ttbar_dist_all = np.concatenate(ttbar_dist)
 ttbar_w_dist_all = np.concatenate(ttbar_w_dist)
 tW_dist_all = np.concatenate(tW_dist)
 tW_w_dist_all = np.concatenate(tW_w_dist)
-_ = plt.hist(tW_dist_all.T[1], bins=100, weights=tW_w_dist_all,
-             density=True, histtype='step', label='tW')
-_ = plt.hist(ttbar_dist_all.T[1], bins=_[1], density=True,
-             weights=ttbar_w_dist_all, histtype='step', label='ttbar')
+_ = plt.hist(
+    tW_dist_all.T[1],
+    bins=100,
+    weights=tW_w_dist_all,
+    density=True,
+    histtype="step",
+    label="tW",
+)
+_ = plt.hist(
+    ttbar_dist_all.T[1],
+    bins=_[1],
+    density=True,
+    weights=ttbar_w_dist_all,
+    histtype="step",
+    label="ttbar",
+)
 _ = plt.legend()
-plt.savefig('out.pdf')
+plt.savefig("out.pdf")
 del _
