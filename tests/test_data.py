@@ -133,9 +133,9 @@ def test_extra_weights():
 def test_label():
     ds2 = root_dataset(["tests/data/test_file.root"], name="ds2", branches=branches)
     assert ds2.label is None
-    assert ds2.label_array is None
+    assert ds2.label_asarray is None
     ds2.label = 6
-    la = ds2.label_array
+    la = ds2.label_asarray
     la_raw = np.ones_like(ds2.weights, dtype=np.int64) * 6
     np.testing.assert_array_equal(la, la_raw)
 
