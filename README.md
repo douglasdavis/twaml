@@ -1,7 +1,7 @@
 <h2 align="center">tW Analysis Machine Learning</h2>
 
 <p align="center">
-<a href="https://build.sr.ht/~ddavis/twaml"><img alt="Build Status" src="https://builds.sr.ht/~ddavis/twaml.svg"></a>
+<a href="https://builds.sr.ht/~ddavis/twaml"><img alt="Build Status" src="https://builds.sr.ht/~ddavis/twaml.svg"></a>
 <a href="https://travis-ci.org/drdavis/twaml"><img alt="Travis Status" src="https://travis-ci.org/drdavis/twaml.svg?branch=master"></a>
 <img src="https://img.shields.io/badge/python-3.6-blue.svg">
 <a href="https://twaml.readthedocs.io/en/latest/?badge=latest"><img alt="Docs" src="https://readthedocs.org/projects/twaml/badge/?version=latest">
