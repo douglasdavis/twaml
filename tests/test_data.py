@@ -34,6 +34,16 @@ def test_nothing():
     assert dst.files[0].exists()
 
 
+def test_with_executor():
+    from concurrent.futures import ThreadPoolExecutor
+
+    executor = ThreadPoolExecutor(4)
+    lds = dataset.from_root(
+        ["tests/data/test_file.root"], branches=branches, executor=executor
+    )
+    np.testing.assert_array_almost_equal(lds.weights, ds.weights, 8)
+
+
 def test_weight():
     ts = [uproot.open(f)[ds.tree_name] for f in ds.files]
     raws = [t.array("weight_nominal") for t in ts]

@@ -334,6 +334,7 @@ class dataset:
         allow_weights_in_df: bool = False,
         extra_weights: Optional[List[str]] = None,
         detect_weights: bool = False,
+        executor: Optional["ThreadPoolExecutor"] = None,
     ) -> "dataset":
         """Create a dataset from ROOT files
 
@@ -363,32 +364,41 @@ class dataset:
           If True, fill the extra_weights df with all "^weight_"
           branches If ``extra_weights`` is not None, this option is
           ignored.
+        executor: Optional[ThreadPoolExecutor]
+          Fill frames using multiple threads,
+          see uproot.TTreeMethods_pandas.df
 
         Examples
         --------
         Example with a single file and two branches:
 
-        >>> ds1 = root_dataset(['file.root'], name='myds',
-        ...                    branches=['pT_lep1', 'pT_lep2'], label=1)
+        >>> ds1 = root_dataset(["file.root"], name="myds",
+        ...                    branches=["pT_lep1", "pT_lep2"], label=1)
 
         Example with multiple input_files and a selection (uses all
         branches). The selection requires the branch ``nbjets == 1``
         and ``njets >= 1``, then label it 5.
 
-        >>> flist = ['file1.root', 'file2.root', 'file3.root']
-        >>> ds = root_dataset(flist, selection={'nbjets': (np.equal, 1),
-        ...                                     'njets': (np.greater, 1)}
+        >>> flist = ["file1.root", "file2.root", "file3.root"]
+        >>> ds = root_dataset(flist, selection={"nbjets": (np.equal, 1),
+        ...                                     "njets": (np.greater, 1)}
         >>> ds.label = 5
 
         Example using extra weights
 
-        >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
-        ...                   extra_weights=['weight_sys_radLo', ' weight_sys_radHi'])
+        >>> ds = root_dataset(flist, name="myds", weight_name="weight_nominal",
+        ...                   extra_weights=["weight_sys_radLo", " weight_sys_radHi"])
 
         Example where we detect extra weights automatically
 
-        >>> ds = root_dataset(flist, name='myds', weight_name='weight_nominal',
+        >>> ds = root_dataset(flist, name="myds", weight_name="weight_nominal",
         ...                   detect_weights=True)
+
+        Example using an executor (16 threads):
+
+        >>> from concurrent.futures import ThreadPoolExecutor
+        >>> executor = ThreadPoolExecutor(16)
+        >>> ds = root_dataset(flist, name="myds", executor=executor)
 
         """
 
@@ -412,7 +422,9 @@ class dataset:
         weight_list, frame_list, extra_frame_list = [], [], []
         for t in uproot_trees:
             raw_w = t.array(weight_name)
-            raw_f = t.pandas.df(branches=branches, namedecode="utf-8")
+            raw_f = t.pandas.df(
+                branches=branches, namedecode="utf-8", executor=executor
+            )
             if not allow_weights_in_df:
                 rmthese = [c for c in raw_f.columns if re.match(wpat, c)]
                 raw_f.drop(columns=rmthese, inplace=True)
@@ -472,7 +484,7 @@ class dataset:
         Examples
         --------
 
-        >>> ds1 = pytables_dataset('ttbar.h5', 'ttbar')
+        >>> ds1 = pytables_dataset("ttbar.h5", "ttbar")
         >>> ds1.label = 1 ## add label dataset after the fact
 
         """
