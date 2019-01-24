@@ -17,12 +17,12 @@ import math
 def compare_distributions(
     dist1,
     dist2,
-    bins: Optional[np.ndarray] = None,
+    bins: Optional["np.ndarray"] = None,
     titles: List[str] = ["dist1", "dist2"],
     colors: List[str] = ["C0", "C1"],
     ratio: bool = True,
-    weight1: Optional[np.ndarray] = None,
-    weight2: Optional[np.ndarray] = None,
+    weight1: Optional["np.ndarray"] = None,
+    weight2: Optional["np.ndarray"] = None,
     **subplots_kw,
 ):
     """Compare two histogrammed distributons with matplotlib
