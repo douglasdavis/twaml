@@ -8,7 +8,7 @@ import numpy as np
 from twaml.data import dataset
 
 
-def root_to_pytables():
+def root2pytables():
     """command line application which converts a set of ROOT files into a
     pytables hdf5 file via the ``twaml.data.root_dataset`` function
     and the ``to_pytables`` member function of the
@@ -109,5 +109,5 @@ def root_to_pytables():
         detect_weights=args.detect_weights,
         executor=xtor,
     )
-    ds.to_pytables(args.out)
+    ds.to_pytables(args.out_file)
     return 0

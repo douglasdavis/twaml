@@ -372,33 +372,33 @@ class dataset:
         --------
         Example with a single file and two branches:
 
-        >>> ds1 = root_dataset(["file.root"], name="myds",
-        ...                    branches=["pT_lep1", "pT_lep2"], label=1)
+        >>> ds1 = dataset.from_root(["file.root"], name="myds",
+        ...                         branches=["pT_lep1", "pT_lep2"], label=1)
 
         Example with multiple input_files and a selection (uses all
         branches). The selection requires the branch ``nbjets == 1``
         and ``njets >= 1``, then label it 5.
 
         >>> flist = ["file1.root", "file2.root", "file3.root"]
-        >>> ds = root_dataset(flist, selection={"nbjets": (np.equal, 1),
-        ...                                     "njets": (np.greater, 1)}
+        >>> ds = dataset.from_root(flist, selection={"nbjets": (np.equal, 1),
+        ...                                          "njets": (np.greater, 1)}
         >>> ds.label = 5
 
         Example using extra weights
 
-        >>> ds = root_dataset(flist, name="myds", weight_name="weight_nominal",
-        ...                   extra_weights=["weight_sys_radLo", " weight_sys_radHi"])
+        >>> ds = dataset.from_root(flist, name="myds", weight_name="weight_nominal",
+        ...                        extra_weights=["weight_sys_radLo", " weight_sys_radHi"])
 
         Example where we detect extra weights automatically
 
-        >>> ds = root_dataset(flist, name="myds", weight_name="weight_nominal",
-        ...                   detect_weights=True)
+        >>> ds = dataset.from_root(flist, name="myds", weight_name="weight_nominal",
+        ...                        detect_weights=True)
 
         Example using an executor (16 threads):
 
         >>> from concurrent.futures import ThreadPoolExecutor
         >>> executor = ThreadPoolExecutor(16)
-        >>> ds = root_dataset(flist, name="myds", executor=executor)
+        >>> ds = dataset.from_root(flist, name="myds", executor=executor)
 
         """
 
@@ -484,7 +484,7 @@ class dataset:
         Examples
         --------
 
-        >>> ds1 = pytables_dataset("ttbar.h5", "ttbar")
+        >>> ds1 = dataset.from_pytables("ttbar.h5", "ttbar")
         >>> ds1.label = 1 ## add label dataset after the fact
 
         """

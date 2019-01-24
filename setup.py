@@ -21,7 +21,9 @@ setup(
     version=get_version(),
     scripts=[],
     packages=find_packages(exclude=["tests"]),
-    entry_points={"console_scripts": ["twaml-convert = twaml.clapps:root_to_pytables"]},
+    entry_points={
+        "console_scripts": ["twaml-root2pytables = twaml.clapps:root2pytables"]
+    },
     description="tW Analysis Machine Learning",
     long_description=LD,
     author="Doug Davis",
