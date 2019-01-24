@@ -3,6 +3,7 @@ twaml command line applications
 """
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from twaml.data import dataset
 
@@ -29,8 +30,20 @@ def root_to_pytables():
         required=True,
         help="input ROOT files",
     )
-    parser.add_argument("-o", "--out", type=str, required=True, help="output h5 file")
-    parser.add_argument("-n", "--name", type=str, required=True, help="dataset name")
+    parser.add_argument(
+        "-n",
+        "--name",
+        type=str,
+        required=True,
+        help="dataset name (required when reading back into twaml.data.dataset)",
+    )
+    parser.add_argument(
+        "-o",
+        "--out-file",
+        type=str,
+        required=True,
+        help="Output h5 file (existing file will be overwritten)",
+    )
     parser.add_argument(
         "-b",
         "--branches",
@@ -70,13 +83,21 @@ def root_to_pytables():
     parser.add_argument(
         "--detect-weights",
         action="store_true",
-        help=("detect weights in the dataset, " "--extra-weights overrides this"),
+        help="detect weights in the dataset, --extra-weights overrides this",
     )
+    parser.add_argument(
+        "--nthreads",
+        type=int,
+        default=1,
+        required=False,
+        help="number of threads to use via ThreadPoolExecutor",
+    )
+
     args = parser.parse_args()
     sel_dict = None
     if args.true_branches is not None:
         sel_dict = {bn: (np.equal, True) for bn in args.true_branches}
-
+    xtor = ThreadPoolExecutor(args.nthreads) if args.nthreads > 1 else None
     ds = dataset.from_root(
         args.input_files,
         name=args.name,
@@ -86,6 +107,7 @@ def root_to_pytables():
         branches=args.branches,
         extra_weights=args.extra_weights,
         detect_weights=args.detect_weights,
+        executor=xtor,
     )
     ds.to_pytables(args.out)
     return 0
