@@ -13,7 +13,7 @@ mwfl = sow * 0.01
 scale_weight_sum(tW_DR, ttbar)
 
 y = np.concatenate([tW_DR.label_array, ttbar.label_array])
-X = np.concatenate([tW_DR.df.values, ttbar.df.values])
+X = np.concatenate([tW_DR.df.to_numpy(), ttbar.df.to_numpy()])
 w = np.concatenate([tW_DR.weights, ttbar.weights])
 
 folder = KFold(n_splits=3, shuffle=True, random_state=414)

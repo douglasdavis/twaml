@@ -207,7 +207,7 @@ class dataset:
         old_weights = self.weights
         self._extra_weights[old_name] = old_weights
 
-        self.weights = self._extra_weights[wname].values
+        self.weights = self._extra_weights[wname].to_numpy()
         self.weight_name = wname
 
         self._extra_weights.drop(columns=[wname], inplace=True)
@@ -495,7 +495,7 @@ class dataset:
             extra_frame = pd.read_hdf(file_name, "{}_extra_weights".format(name))
         else:
             extra_frame = None
-        w_array = main_weight_frame.weights.values
+        w_array = main_weight_frame.weights.to_numpy()
         ds = dataset(
             [file_name], name, weight_name=weight_name, tree_name=tree_name, label=label
         )

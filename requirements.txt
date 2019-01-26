@@ -1,6 +1,6 @@
 uproot>=3.0
-matplotlib
-pandas
+matplotlib>=3.0
+pandas>=0.24.0
 scikit-learn>=0.20
+tables>=3.4
 h5py
-tables

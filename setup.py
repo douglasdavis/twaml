@@ -22,7 +22,7 @@ setup(
     scripts=[],
     packages=find_packages(exclude=["tests"]),
     entry_points={
-        "console_scripts": ["twaml-root2pytables = twaml.clapps:root2pytables"]
+        "console_scripts": ["twaml-root2pytables = twaml._apps:root2pytables"]
     },
     description="tW Analysis Machine Learning",
     long_description=LD,
@@ -32,7 +32,7 @@ setup(
     url="https://github.com/drdavis/twaml",
     test_suite="tests",
     install_requires=requirements,
-    tests_require=["pytest>=3.9"],
+    tests_require=["pytest>=4.0"],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 3.6",

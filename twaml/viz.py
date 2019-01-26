@@ -157,8 +157,8 @@ def compare_columns(
 
     w1, w2 = ds1.weights, ds2.weights
     for col, a in zip(cols, axs.flatten()):
-        dist1 = ds1.df[col].values
-        dist2 = ds2.df[col].values
+        dist1 = ds1.df[col].to_numpy()
+        dist2 = ds2.df[col].to_numpy()
         print(dist1.dtype, dist2.dtype)
         xmin = min(np.min(dist1), np.min(dist2))
         xmax = max(np.max(dist1), np.max(dist1))

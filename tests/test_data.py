@@ -25,7 +25,7 @@ def test_content():
     raw = np.concatenate([raws])
     bins = np.linspace(0, 800, 21)
     n1, bins1 = np.histogram(raw, bins=bins)
-    n2, bins2 = np.histogram(ds.df.pT_lep1.values, bins=bins)
+    n2, bins2 = np.histogram(ds.df.pT_lep1.to_numpy(), bins=bins)
     np.testing.assert_array_equal(n1, n2)
 
 
@@ -140,7 +140,7 @@ def test_extra_weights():
     ds2pt = dataset.from_pytables("outfile1.h5", "ds2", weight_name="phi_lep2")
     print(ds2pt.extra_weights)
     np.testing.assert_array_almost_equal(
-        ds2pt.extra_weights["weight_nominal"].values, nw2
+        ds2pt.extra_weights["weight_nominal"].to_numpy(), nw2
     )
     os.remove("outfile1.h5")
     assert True
@@ -161,8 +161,8 @@ def test_label():
 def test_save_and_read():
     ds.to_pytables("outfile.h5")
     new_ds = dataset.from_pytables("outfile.h5", ds.name)
-    X1 = ds.df.values
-    X2 = new_ds.df.values
+    X1 = ds.df.to_numpy()
+    X2 = new_ds.df.to_numpy()
     w1 = ds.weights
     w2 = new_ds.weights
     np.testing.assert_array_almost_equal(X1, X2, 6)

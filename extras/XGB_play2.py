@@ -52,7 +52,7 @@ def train_2j2b():
             np.zeros_like(ttbar.weights),
         ]
     )
-    X = np.concatenate([tW_DR.df.values, tW_DS.df.values, ttbar.df.values])
+    X = np.concatenate([tW_DR.df.to_numpy(), tW_DS.df.to_numpy(), ttbar.df.to_numpy()])
     w = np.concatenate([tW_DR.weights, tW_DS.weights, ttbar.weights])
 
     folder = KFold(n_splits=3, shuffle=True, random_state=414)

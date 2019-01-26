@@ -4,7 +4,7 @@ Command Line Applications
 .. toctree::
    :maxdepth: 1
 
-.. currentmodule:: twaml.clapps
+.. currentmodule:: twaml._apps
 
 ``twaml-root2pytables``
 -----------------------
