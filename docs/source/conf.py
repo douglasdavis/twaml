@@ -23,7 +23,7 @@ except ImportError:
 # -- Project information -----------------------------------------------------
 
 project = 'twaml'
-copyright = '2018, Doug Davis'
+copyright = '2019, Doug Davis'
 author = 'Doug Davis'
 
 # The short X.Y version

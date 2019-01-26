@@ -3,15 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+twaml
+=====
+
+Python tooling for :math:`tW`.
+
 .. toctree::
-   :hidden:
+   :maxdepth: 1
 
    started.rst
    cli.rst
    api.rst
    tests.rst
-
-.. mdinclude:: ../../README.md
 
 .. Indices and tables
 .. ==================
