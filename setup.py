@@ -31,6 +31,7 @@ setup(
     license="MIT",
     url="https://github.com/drdavis/twaml",
     test_suite="tests",
+    python_requires=">3.6.5",
     install_requires=requirements,
     tests_require=["pytest>=4.0"],
     classifiers=[
