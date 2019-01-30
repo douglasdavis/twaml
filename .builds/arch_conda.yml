@@ -10,15 +10,23 @@ tasks:
       bash miniconda.sh -b -p $HOME/miniconda
       export PATH="$HOME/miniconda/bin:$PATH"
       conda config --set always_yes yes --set changeps1 no
-      conda create -q -n testenv python=3.6 hdf5 setuptools
+      conda create -q -n testenv python=3.6 hdf5 setuptools numpy scipy matplotlib pytables pandas scikit-learn
       source activate testenv
       pip install pip -U
       pip install setuptools -U
       pip install "uproot>=3.0"
       pip install pytest
-  - build: |
+  - test: |
       cd twaml
       export PATH="$HOME/miniconda/bin:$PATH"
       source activate testenv
       pip install .
       pytest
+  - publish: |
+      cd twaml
+      export PATH="$HOME/miniconda/bin:$PATH"
+      source activate testenv
+      pip install setuptools -U
+      pip install twine
+      python setup.py sdist bdist_wheel
+      ls -lh dist
