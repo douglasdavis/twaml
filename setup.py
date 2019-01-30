@@ -29,12 +29,13 @@ setup(
     author="Doug Davis",
     author_email="ddavis@cern.ch",
     license="MIT",
-    url="https://github.com/drdavis/twaml",
+    url="https://git.sr.ht/~ddavis/twaml"
     test_suite="tests",
     python_requires=">3.6.5",
     install_requires=requirements,
     tests_require=["pytest>=4.0"],
     classifiers=[
+        "Development Status :: 2 - Pre-Alpha"
         "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
