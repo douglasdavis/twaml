@@ -50,7 +50,7 @@ def root2pytables():
         type=str,
         nargs="+",
         required=False,
-        help="branches to save (default to all",
+        help="branches to save (defaults to all)",
     )
     parser.add_argument(
         "--tree-name",
