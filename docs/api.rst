@@ -6,7 +6,7 @@ API Reference
    :no-inherited-members:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    api_data.rst
    api_viz.rst

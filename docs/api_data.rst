@@ -1,5 +1,8 @@
-``twaml.data``
-==============
+twaml.data
+==========
+
+.. toctree::
+   :maxdepth: 2
 
 The ``data`` module provides a thin wrapper around working with
 persistent ROOT files, persistent h5 files, and the use of transient

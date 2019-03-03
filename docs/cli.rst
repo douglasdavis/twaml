@@ -2,7 +2,7 @@ Command Line Applications
 =========================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
 .. currentmodule:: twaml._apps
 

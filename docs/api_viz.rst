@@ -1,11 +1,10 @@
-``twaml.viz``
-=============
+twaml.viz
+=========
 
-The ``viz`` module provides visualization tools
+.. toctree::
+   :maxdepth: 2
 
-
-.. ``twaml.viz``
-.. -------------
+The ``viz`` module provides visualization tools.
 
 .. automodule:: twaml.viz
    :members:
