@@ -84,7 +84,7 @@ def compare_distributions(
             color=colors[1],
             weights=weight2,
         )
-        centers = np.delete(h1[1], [0]) - (np.ediff1d(h1[1]) / 2.0)
+        centers = (h1[1][:-1] + h1[1][1:]) / 2.0
         ax[1].plot(centers, h1[0] / h2[0], "k-")
         ax[1].plot([centers[0] - 10e3, centers[1] + 10e3], np.ones(2), "k--")
         ax[1].set_ylim([0, 2])
