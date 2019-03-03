@@ -2,10 +2,6 @@ from setuptools import setup
 from setuptools import find_packages
 import os
 
-LD = """ This is a python package for applying machine learning to the
-ATLAS Full Run II tW Analysis.  """
-
-
 def get_version():
     g = {}
     exec(open(os.path.join("twaml", "version.py")).read(), g)
@@ -15,6 +11,9 @@ def get_version():
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, "README.md"), "rb") as f:
+    long_description = f.read().decode("utf-8")
 
 setup(
     name="twaml",
@@ -25,11 +24,12 @@ setup(
         "console_scripts": ["twaml-root2pytables = twaml._apps:root2pytables"]
     },
     description="tW Analysis Machine Learning",
-    long_description=LD,
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Doug Davis",
-    author_email="ddavis@cern.ch",
+    author_email="ddavis@ddavis.io",
     license="MIT",
-    url="https://git.sr.ht/~ddavis/twaml",
+    url="https://github.com/drdavis/twaml",
     test_suite="tests",
     python_requires=">3.6.5",
     install_requires=requirements,
