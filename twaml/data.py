@@ -178,22 +178,32 @@ class dataset:
         rmthese = [c for c in self._df.columns if re.match(pat, c)]
         self._df.drop(columns=rmthese, inplace=True)
 
-    def rm_columns_re(self, cols: List[str]) -> None:
+    def rmcolumns_re(self, pattern: str) -> None:
         """Remove some columns from the payload based on regex paterns
 
         Uses ``pd.DataFrame.drop(..., inplace=True)``.
 
         Parameters
         ----------
-        cols : List[str]
-          List of regex paterns
+        pattern : str
+          Regex used to remove columns
         """
-        import re
+        pat = re.compile(pattern)
+        rmthese = [c for c in self_.df.columns if re.search(pat, c)]
+        self._df.drop(columns=rmthese, inplace=True)
 
-        for rm in cols:
-            pat = re.compile(rm)
-            rmthese = [c for c in self._df.columns if re.search(pat, c)]
-            self._df.drop(columns=rmthese, inplace=True)
+    def rmcolumns(self, cols: List[str]) -> None:
+        """Remove columns from the dataset
+
+        Users ``pd.DataFrame.drop(..., inplace=True)``.
+
+        Paramters
+        ---------
+        cols: List[str]
+          List of column names to remove
+
+        """
+        self._df.drop(columns=cols, inplace=True)
 
     def change_weights(self, wname: str) -> None:
         """Change the main weight of the dataset

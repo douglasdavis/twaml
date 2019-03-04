@@ -7,7 +7,9 @@ A module to aid visualizing our datasets
 """
 
 from .data import dataset
+import matplotlib as mpl
 
+mpl.use("pdf")
 import matplotlib.pyplot as plt
 from typing import List, Optional, Tuple
 import numpy as np

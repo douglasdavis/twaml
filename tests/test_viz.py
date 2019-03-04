@@ -3,7 +3,7 @@ import twaml.viz
 import numpy as np
 import matplotlib as mpl
 
-mpl.use("agg")
+mpl.use("pdf")
 
 
 def test_compare_dist():
