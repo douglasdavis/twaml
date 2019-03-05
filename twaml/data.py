@@ -15,6 +15,9 @@ import numpy as np
 import re
 from pathlib import PosixPath
 from typing import List, Dict, Tuple, Optional
+import logging
+
+log = logging.getLogger(__name__)
 
 __all__ = ["dataset", "scale_weight_sum"]
 
@@ -25,6 +28,13 @@ class dataset:
     construct a dataset. The class constructor should be used only in
     very special cases.
 
+    ``datasets`` should `always` be constructed from a staticmethod,
+    currently there are 3 available:
+
+      - :meth:`dataset.from_root`
+      - :meth:`dataset.from_pytables`
+      - :meth:`dataset.from_h5`
+
     Attributes
     ----------
     files: List[PosixPath]
@@ -32,7 +42,8 @@ class dataset:
     name: str
       Name for the dataset
     tree_name: str
-      All of our datasets had to come from a ROOT tree at some point
+      All of our datasets had to come from a ROOT tree at some
+      point. This is the name
     weights: numpy.ndarray
       The array of event weights
     df: pandas.DataFrame
@@ -52,7 +63,16 @@ class dataset:
 
     """
 
-    def __init__(
+    _weights = None
+    _df = None
+    _extra_weights = None
+    files = None
+    name = None
+    weight_name = None
+    tree_name = None
+    label = None
+
+    def _init(
         self,
         input_files: List[str],
         name: Optional[str] = None,
@@ -60,7 +80,8 @@ class dataset:
         weight_name: str = "weight_nominal",
         label: Optional[int] = None,
     ) -> None:
-        """Default dataset creation
+        """Default initialization - should only be called by internal
+        staticmethods ``from_root``, ``from_pytables``, ``from_h5``
 
         Parameters
         ----------
@@ -74,6 +95,7 @@ class dataset:
           Name of the weight branch
         label: Optional[int]
           Give dataset an integer based label
+
         """
         self._weights = np.array([])
         self._df = pd.DataFrame({})
@@ -218,8 +240,8 @@ class dataset:
 
         Users ``pd.DataFrame.drop(..., inplace=True)``.
 
-        Paramters
-        ---------
+        Parameters
+        ----------
         cols: List[str]
           List of column names to remove
 
@@ -294,6 +316,8 @@ class dataset:
           output file name,
 
         """
+        if PosixPath(file_name).exists:
+            log.warning(f"{file_name} exists, overwriting")
         weights_frame = pd.DataFrame(dict(weights=self._weights))
         self._df.to_hdf(file_name, self.name, mode="w")
         weights_frame.to_hdf(file_name, self.weight_name, mode="a")
@@ -325,7 +349,8 @@ class dataset:
         new_weights = np.concatenate([self.weights, other.weights])
         new_df = pd.concat([self.df, other.df])
         new_files = [str(f) for f in (self.files + other.files)]
-        new_ds = dataset(
+        new_ds = dataset()
+        new_ds._init(
             new_files,
             self.name,
             weight_name=self.weight_name,
@@ -433,7 +458,8 @@ class dataset:
 
         """
 
-        ds = dataset(
+        ds = dataset()
+        ds._init(
             input_files, name, tree_name=tree_name, weight_name=weight_name, label=label
         )
 
@@ -527,7 +553,8 @@ class dataset:
         else:
             extra_frame = None
         w_array = main_weight_frame.weights.to_numpy()
-        ds = dataset(
+        ds = dataset()
+        ds._init(
             [file_name], name, weight_name=weight_name, tree_name=tree_name, label=label
         )
         ds._set_df_and_weights(main_frame, w_array, extra=extra_frame)
@@ -564,8 +591,14 @@ class dataset:
         label: Optional[int]
           Give the dataset an integer label
 
+        Examples
+        --------
+
+        >>> ds = dataset.from_h5('file.h5', 'dsname', tree_name='WtLoop_EG_RESOLUTION_ALL__1up')
+
         """
-        ds = dataset(
+        ds = dataset()
+        ds._init(
             [file_name],
             name=name,
             weight_name=weight_name,
