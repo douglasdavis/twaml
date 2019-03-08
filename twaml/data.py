@@ -630,7 +630,7 @@ class dataset:
           Name of the weight array inside the h5 file
         label: Optional[int]
           Give the dataset an integer label
-        label: Optional[int]
+        auxlabel: Optional[int]
           Give the dataset an integer auxiliary label
 
         Examples
