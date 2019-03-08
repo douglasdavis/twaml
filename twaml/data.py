@@ -52,8 +52,12 @@ class dataset:
       Extra weights to have access too
     label: Optional[int]
       Optional dataset label (as an int)
+    auxlabel: Optional[int]
+      Optional auxiliary label (as an int) - sometimes we need two labels
     label_asarray: Optional[np.ndarray]
       Optional dataset label (as an array of ints)
+    auxlabel_asarray: Optional[np.ndarray]
+      Optional dataset auxiliary label (as an array of ins)
     has_payload: bool
       Flag to know that the dataset actually wraps data
     cols: List[str]
@@ -70,7 +74,8 @@ class dataset:
     name = None
     weight_name = None
     tree_name = None
-    label = None
+    _label = None
+    _auxlabel = None
 
     def _init(
         self,
@@ -79,6 +84,7 @@ class dataset:
         tree_name: str = "WtLoop_nominal",
         weight_name: str = "weight_nominal",
         label: Optional[int] = None,
+        auxlabel: Optional[int] = None,
     ) -> None:
         """Default initialization - should only be called by internal
         staticmethods ``from_root``, ``from_pytables``, ``from_h5``
@@ -95,7 +101,8 @@ class dataset:
           Name of the weight branch
         label: Optional[int]
           Give dataset an integer based label
-
+        auxlabel: Optional[int]
+          Give dataset an integer based auxiliary label
         """
         self._weights = np.array([])
         self._df = pd.DataFrame({})
@@ -110,6 +117,7 @@ class dataset:
         self.weight_name = weight_name
         self.tree_name = tree_name
         self._label = label
+        self._auxlabel = auxlabel
 
     @property
     def has_payload(self) -> bool:
@@ -155,9 +163,23 @@ class dataset:
 
     @property
     def label_asarray(self) -> Optional[np.ndarray]:
-        if self.label is None:
+        if self._label is None:
             return None
-        return np.ones_like(self.weights, dtype=np.int64) * self.label
+        return np.ones_like(self.weights, dtype=np.int64) * self._label
+
+    @property
+    def auxlabel(self) -> Optional[int]:
+        return self._auxlabel
+
+    @auxlabel.setter
+    def auxlabel(self, new: int) -> None:
+        self._auxlabel = new
+
+    @property
+    def auxlabel_asarray(self) -> Optional[np.ndarray]:
+        if self._auxlabel is None:
+            return None
+        return np.ones_like(self.weights, dtype=np.int64) * self._auxlabel
 
     @property
     def cols(self) -> List[str]:
@@ -355,7 +377,8 @@ class dataset:
             self.name,
             weight_name=self.weight_name,
             tree_name=self.tree_name,
-            label=self.label,
+            label=self._label,
+            auxlabel=self._auxlabel,
         )
 
         if self.extra_weights is not None and other.extra_weights is not None:
@@ -387,6 +410,7 @@ class dataset:
         branches: List[str] = None,
         selection: Dict = None,
         label: Optional[int] = None,
+        auxlabel: Optional[int] = None,
         allow_weights_in_df: bool = False,
         extra_weights: Optional[List[str]] = None,
         detect_weights: bool = False,
@@ -412,6 +436,8 @@ class dataset:
           selections are combined using ``np.logical_and``
         label: Optional[int]
           Give the dataset an integer label
+        auxlabel: Optional[int]
+          Give the dataset an integer auxiliary label
         allow_weights_in_df: bool
           Allow "^weight_" branches in the payload dataframe
         extra_weights: Optional[List[str]]
@@ -460,7 +486,12 @@ class dataset:
 
         ds = dataset()
         ds._init(
-            input_files, name, tree_name=tree_name, weight_name=weight_name, label=label
+            input_files,
+            name,
+            tree_name=tree_name,
+            weight_name=weight_name,
+            label=label,
+            auxlabel=auxlabel,
         )
 
         uproot_trees = [uproot.open(file_name)[tree_name] for file_name in input_files]
@@ -516,6 +547,7 @@ class dataset:
         tree_name: str = "WtLoop_nominal",
         weight_name: str = "weight_nominal",
         label: Optional[int] = None,
+        auxlabel: Optional[int] = None,
     ) -> "dataset":
         """Create an h5 dataset from pytables output generated from
         dataset.to_pytables
@@ -537,6 +569,8 @@ class dataset:
           Name of the weight array inside the h5 file
         label: Optional[int]
           Give the dataset an integer label
+        auxlabel: Optional[int]
+          Give the dataset an integer auxiliary label
 
         Examples
         --------
@@ -555,7 +589,12 @@ class dataset:
         w_array = main_weight_frame.weights.to_numpy()
         ds = dataset()
         ds._init(
-            [file_name], name, weight_name=weight_name, tree_name=tree_name, label=label
+            [file_name],
+            name,
+            weight_name=weight_name,
+            tree_name=tree_name,
+            label=label,
+            auxlabel=auxlabel,
         )
         ds._set_df_and_weights(main_frame, w_array, extra=extra_frame)
         return ds
@@ -568,6 +607,7 @@ class dataset:
         tree_name: str = "WtLoop_nominal",
         weight_name: str = "weight_nominal",
         label: Optional[int] = None,
+        auxlabel: Optional[int] = None,
     ) -> "dataset":
         """Create a dataset from generic h5 input (loosely expected to be from
         the ATLAS Analysis Release utility ``ttree2hdf5``
@@ -590,6 +630,8 @@ class dataset:
           Name of the weight array inside the h5 file
         label: Optional[int]
           Give the dataset an integer label
+        label: Optional[int]
+          Give the dataset an integer auxiliary label
 
         Examples
         --------
@@ -604,6 +646,7 @@ class dataset:
             weight_name=weight_name,
             tree_name=tree_name,
             label=label,
+            auxlabel=auxlabel,
         )
 
         f = h5py.File(file_name, mode="r")
