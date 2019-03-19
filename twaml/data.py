@@ -323,7 +323,8 @@ class dataset:
             self._extra_weights = None
 
     def to_pytables(self, file_name: str) -> None:
-        """Write payload to disk as an pytables h5 file with strict options
+        """Write payload to disk as a pytables h5 file (with a strict naming
+        scheme)
 
         The key in the file is the name of the dataset. The weights
         array is stored as a separate frame with the key being the
@@ -338,7 +339,7 @@ class dataset:
           output file name,
 
         """
-        if PosixPath(file_name).exists:
+        if PosixPath(file_name).exists():
             log.warning(f"{file_name} exists, overwriting")
         weights_frame = pd.DataFrame(dict(weights=self._weights))
         self._df.to_hdf(file_name, self.name, mode="w")
@@ -416,7 +417,7 @@ class dataset:
         detect_weights: bool = False,
         executor: Optional["ThreadPoolExecutor"] = None,
     ) -> "dataset":
-        """Create a dataset from ROOT files
+        """Initialize a dataset from ROOT files
 
         Parameters
         ----------
@@ -549,7 +550,7 @@ class dataset:
         label: Optional[int] = None,
         auxlabel: Optional[int] = None,
     ) -> "dataset":
-        """Create an h5 dataset from pytables output generated from
+        """Initialize a dataset from pytables output generated from
         dataset.to_pytables
 
         The payload is extracted from the .h5 pytables files using the
@@ -609,8 +610,8 @@ class dataset:
         label: Optional[int] = None,
         auxlabel: Optional[int] = None,
     ) -> "dataset":
-        """Create a dataset from generic h5 input (loosely expected to be from
-        the ATLAS Analysis Release utility ``ttree2hdf5``
+        """Initialize a dataset from generic h5 input (loosely expected to be
+        from the ATLAS Analysis Release utility ``ttree2hdf5``
 
         The name of the HDF5 dataset inside the file is assumed to be
         ``tree_name``. The ``name`` argument is something *you
