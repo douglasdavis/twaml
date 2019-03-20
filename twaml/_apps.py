@@ -10,13 +10,13 @@ import logging
 
 
 def root2pytables():
-    log = logging.getLogger("root2pytables")
     """command line application which converts a set of ROOT files into a
-    pytables hdf5 file via the ``twaml.data.root_dataset`` function
+    pytables HDF5 file via the ``twaml.data.root_dataset`` function
     and the ``to_pytables`` member function of the
     ``twaml.data.dataset`` class.
 
     """
+    log = logging.getLogger("root2pytables")
     parser = argparse.ArgumentParser(
         description=(
             "Convert ROOT files to a pytables hdf5 dataset "
@@ -76,11 +76,10 @@ def root2pytables():
         help="extra weights to save",
     )
     parser.add_argument(
-        "--true-branches",
+        "--selection",
         type=str,
-        nargs="+",
         required=False,
-        help="branches that must be true to pass selection",
+        help="A selection string (see `selection` argument docs in `twaml.dataset.from_root`)",
     )
     parser.add_argument(
         "--detect-weights",
@@ -101,22 +100,21 @@ def root2pytables():
         "Converting the following ROOT files to pytables ({}):".format(args.out_file)
     )
     for f in args.input_files:
-        log.info("- {}".format(f))
+        log.info(f"- {f}")
 
-    sel_dict = None
-    if args.true_branches is not None:
-        sel_dict = {bn: (np.equal, True) for bn in args.true_branches}
     xtor = ThreadPoolExecutor(args.nthreads) if args.nthreads > 1 else None
+
     ds = dataset.from_root(
         args.input_files,
         name=args.name,
         tree_name=args.tree_name,
+        selection=args.selection,
         weight_name=args.weight_name,
-        selection=sel_dict,
         branches=args.branches,
         extra_weights=args.extra_weights,
         detect_weights=args.detect_weights,
         executor=xtor,
+        wtloop_meta=True,
     )
     ds.to_pytables(args.out_file)
 

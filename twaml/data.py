@@ -13,8 +13,9 @@ import pandas as pd
 import h5py
 import numpy as np
 import re
+import yaml
 from pathlib import PosixPath
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Union
 import logging
 
 log = logging.getLogger(__name__)
@@ -64,7 +65,8 @@ class dataset:
       Column names as a list of strings
     shape: Tuple
       Shape of the main payload dataframe
-
+    wtmetas: Optional[Dict[str, Dict[str]]]
+      A dictionary of files to meta dictionaries
     """
 
     _weights = None
@@ -76,6 +78,7 @@ class dataset:
     tree_name = None
     _label = None
     _auxlabel = None
+    wtmetas = None
 
     def _init(
         self,
@@ -109,7 +112,7 @@ class dataset:
         self._extra_weights = None
         self.files = [PosixPath(f) for f in input_files]
         for f in self.files:
-            assert f.exists(), "{} does not exist".format(f)
+            assert f.exists(), f"{f} does not exist"
         if name is None:
             self.name = str(self.files[0].parts[-1])
         else:
@@ -260,7 +263,7 @@ class dataset:
     def rmcolumns(self, cols: List[str]) -> None:
         """Remove columns from the dataset
 
-        Users ``pd.DataFrame.drop(..., inplace=True)``.
+        Uses ``pd.DataFrame.drop(..., inplace=True)``.
 
         Parameters
         ----------
@@ -346,8 +349,12 @@ class dataset:
         weights_frame.to_hdf(file_name, self.weight_name, mode="a")
         if self._extra_weights is not None:
             self._extra_weights.to_hdf(
-                file_name, "{}_extra_weights".format(self.name), mode="a"
+                file_name, f"{self.name}_extra_weights", mode="a"
             )
+        if self.wtmetas is not None:
+            tempdict = {k: np.array([str(v)]) for k, v in self.wtmetas.items()}
+            wtmetadf = pd.DataFrame.from_dict(tempdict)
+            wtmetadf.to_hdf(file_name, "wtmetas", mode="a")
 
     def __add__(self, other: "dataset") -> "dataset":
         """Add two datasets together
@@ -396,33 +403,34 @@ class dataset:
 
     def __repr__(self) -> str:
         """standard repr"""
-        return "<twaml.data.dataset(name={}, shape={})>".format(self.name, self.shape)
+        return f"<twaml.data.dataset(name={self.name}, shape={self.shape})>"
 
     def __str__(self) -> str:
         """standard str"""
-        return "dataset(name={})".format(self.name)
+        return f"dataset(name={self.name})"
 
     @staticmethod
     def from_root(
-        input_files: List[str],
+        input_files: Union[str, List[str]],
         name: Optional[str] = None,
         tree_name: str = "WtLoop_nominal",
         weight_name: str = "weight_nominal",
         branches: List[str] = None,
-        selection: Dict = None,
+        selection: Optional[str] = None,
         label: Optional[int] = None,
         auxlabel: Optional[int] = None,
         allow_weights_in_df: bool = False,
         extra_weights: Optional[List[str]] = None,
         detect_weights: bool = False,
         executor: Optional["ThreadPoolExecutor"] = None,
+        wtloop_meta: bool = False,
     ) -> "dataset":
         """Initialize a dataset from ROOT files
 
         Parameters
         ----------
-        input_files: List[str]
-          List of ROOT input_files to use
+        input_files: str or List[str]
+          Single or list of ROOT input file(s) to use
         name: str
           Name of the dataset (if none use first file name)
         tree_name: str
@@ -431,10 +439,11 @@ class dataset:
           Name of the weight branch
         branches: List[str]
           List of branches to store in the dataset, if None use all
-        selection: Dict
-          A dictionary of selections to apply of the form:
-          ``{branch_name: (numpy.ufunc, test_value)}``. the
-          selections are combined using ``np.logical_and``
+        selection: str
+          A string passed to pandas.DataFrame.eval to apply a selection
+          based on branch/column values. Column names must be prepended
+          by ``df.``, e.g. ``(df.reg1j1b == True) & (df.OS == True)``
+          requires the ``reg1j1b`` and ``OS`` branches to be ``True``.
         label: Optional[int]
           Give the dataset an integer label
         auxlabel: Optional[int]
@@ -450,6 +459,10 @@ class dataset:
         executor: Optional[ThreadPoolExecutor]
           Fill frames using multiple threads,
           see uproot.TTreeMethods_pandas.df
+        wtloop_meta: bool
+          grab and store the `WtLoop_meta` YAML entries. stored as a dictionary
+          of the form ``{ str(filename) : dict(yaml) }`` in the class variable
+          ``wtmetas``.
 
         Examples
         --------
@@ -463,8 +476,7 @@ class dataset:
         and ``njets >= 1``, then label it 5.
 
         >>> flist = ["file1.root", "file2.root", "file3.root"]
-        >>> ds = dataset.from_root(flist, selection={"nbjets": (np.equal, 1),
-        ...                                          "njets": (np.greater, 1)}
+        >>> ds = dataset.from_root(flist, selection='(df.nbjets == 1) & (df.njets >= 1)')
         >>> ds.label = 5
 
         Example using extra weights
@@ -485,6 +497,16 @@ class dataset:
 
         """
 
+        if isinstance(input_files, (str, bytes)):
+            input_files = [input_files]
+        else:
+            try:
+                iter(input_files)
+            except TypeError:
+                input_files = [input_files]
+            else:
+                input_files = list(input_files)
+
         ds = dataset()
         ds._init(
             input_files,
@@ -494,6 +516,16 @@ class dataset:
             label=label,
             auxlabel=auxlabel,
         )
+
+        if wtloop_meta:
+            meta_trees = {
+                file_name: uproot.open(file_name)["WtLoop_meta"]
+                for file_name in input_files
+            }
+            ds.wtmetas = {
+                fn: yaml.full_load(mt.array("meta_yaml")[0])
+                for fn, mt in meta_trees.items()
+            }
 
         uproot_trees = [uproot.open(file_name)[tree_name] for file_name in input_files]
 
@@ -508,28 +540,32 @@ class dataset:
         else:
             w_branches = None
 
-        weight_list, frame_list, extra_frame_list = [], [], []
+        frame_list, weight_list, extra_frame_list = [], [], []
         for t in uproot_trees:
             raw_w = t.array(weight_name)
-            raw_f = t.pandas.df(
-                branches=branches, namedecode="utf-8", executor=executor
-            )
+            df = t.pandas.df(branches=branches, namedecode="utf-8", executor=executor)
             if not allow_weights_in_df:
-                rmthese = [c for c in raw_f.columns if re.match(wpat, c)]
-                raw_f.drop(columns=rmthese, inplace=True)
+                rmthese = [c for c in df.columns if re.match(wpat, c)]
+                df.drop(columns=rmthese, inplace=True)
 
             if w_branches is not None:
                 raw_aw = t.pandas.df(branches=w_branches, namedecode="utf-8")
 
-            isel = np.ones((raw_w.shape[0]), dtype=bool)
             if selection is not None:
-                selections = {k: v[0](t.array(k), v[1]) for k, v in selection.items()}
-                for k, v in selections.items():
-                    isel = np.logical_and(isel, v)
-            weight_list.append(raw_w[isel])
-            frame_list.append(raw_f[isel])
+                iselec = pd.eval(selection)
+                raw_w = raw_w[iselec]
+                df = df[iselec]
+                if w_branches is not None:
+                    raw_aw = raw_aw[iselec]
+
+            assert len(raw_w) == len(df), "frame length and weight length different"
+            weight_list.append(raw_w)
+            frame_list.append(df)
             if w_branches is not None:
-                extra_frame_list.append(raw_aw[isel])
+                extra_frame_list.append(raw_aw)
+                assert len(raw_w) == len(
+                    raw_aw
+                ), "aux weight length and weight length different"
 
         weights_array = np.concatenate(weight_list)
         df = pd.concat(frame_list)
@@ -539,12 +575,13 @@ class dataset:
             aw_df = None
 
         ds._set_df_and_weights(df, weights_array, extra=aw_df)
+
         return ds
 
     @staticmethod
     def from_pytables(
         file_name: str,
-        name: str,
+        name: str = "auto",
         tree_name: str = "WtLoop_nominal",
         weight_name: str = "weight_nominal",
         label: Optional[int] = None,
@@ -563,9 +600,10 @@ class dataset:
         file_name: str
           Name of h5 file containing the payload
         name: str
-          Name of the dataset inside the h5 file
+          Name of the dataset inside the h5 file. If ``"auto"`` (default)
+          we attempt to determine the name automatically from the h5 file.
         tree_name: str
-          Name of tree where dataset originated
+          Name of tree where dataset originated (for reference)
         weight_name: str
           Name of the weight array inside the h5 file
         label: Optional[int]
@@ -580,23 +618,39 @@ class dataset:
         >>> ds1.label = 1 ## add label dataset after the fact
 
         """
-        main_frame = pd.read_hdf(file_name, name)
-        main_weight_frame = pd.read_hdf(file_name, weight_name)
-        h5f = h5py.File(file_name, "r")
-        if "{}_extra_weights".format(name) in h5f:
-            extra_frame = pd.read_hdf(file_name, "{}_extra_weights".format(name))
+        if name == "auto":
+            with h5py.File(file_name, "r") as f:
+                keys = list(f.keys())
+                dsname = keys[0]
         else:
-            extra_frame = None
+            dsname = name
+
+        main_frame = pd.read_hdf(file_name, dsname)
+        main_weight_frame = pd.read_hdf(file_name, weight_name)
+        with h5py.File(file_name, "r") as f:
+            if f"{dsname}_extra_weights" in f:
+                extra_frame = pd.read_hdf(file_name, f"{dsname}_extra_weights")
+            else:
+                extra_frame = None
         w_array = main_weight_frame.weights.to_numpy()
         ds = dataset()
         ds._init(
             [file_name],
-            name,
+            dsname,
             weight_name=weight_name,
             tree_name=tree_name,
             label=label,
             auxlabel=auxlabel,
         )
+
+        with h5py.File(file_name, "r") as f:
+            if "wtmetas" in f:
+                wtmetas = pd.read_hdf(file_name, "wtmetas")
+                ds.wtmetas = {
+                    fn: yaml.full_load(wtmetas[fn].to_numpy()[0])
+                    for fn in wtmetas.columns
+                }
+
         ds._set_df_and_weights(main_frame, w_array, extra=extra_frame)
         return ds
 
@@ -674,8 +728,8 @@ def scale_weight_sum(to_update: "dataset", reference: "dataset") -> None:
         dataset to scale to
 
     """
-    assert to_update.has_payload, "{} is without payload".format(to_update)
-    assert reference.has_payload, "{} is without payload".format(reference)
+    assert to_update.has_payload, f"{to_update} is without payload"
+    assert reference.has_payload, f"{reference} is without payload"
     sum_to_update = to_update.weights.sum()
     sum_reference = reference.weights.sum()
     to_update.weights *= sum_reference / sum_to_update

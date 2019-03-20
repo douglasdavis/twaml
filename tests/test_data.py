@@ -71,6 +71,22 @@ def test_add():
     assert ds.cols == combined.cols
 
 
+def test_selection():
+    ds2 = dataset.from_root(
+        ["tests/data/test_file.root"],
+        name="ds2",
+        selection="(df.reg2j2b==True) & (df.OS == True) & (df.pT_lep1 > 50)",
+    )
+    upt = uproot.open("tests/data/test_file.root")["WtLoop_nominal"]
+    reg2j2b = upt.array("reg2j2b")
+    OS = upt.array("OS")
+    pT_lep1 = upt.array("pT_lep1")
+    sel = np.logical_and(np.logical_and(reg2j2b, OS), pT_lep1 > 50)
+    w = upt.array("weight_nominal")[sel]
+    assert np.allclose(w, ds2.weights)
+    # np.testing.assert_array_almost_equal(w, ds2.weights)
+
+
 def test_append():
     branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
     ds1 = dataset.from_root(

@@ -6,17 +6,15 @@ A module providing some utlities
 
 Attributes
 ----------
-SD_1J1B : Dict
-  selection dictionary for 1j1b region
-SD_2J1B : Dict
-  selection dictionary for 2j1b region
-SD_2J2B : Dict
-  selection dictionary for 2j2b region
-TEXIT : Dict
+SELECTION_1j1b: str
+  selection tW for 1j1b region
+SELECTION_2j1b: str
+  selection tW for 2j1b region
+SELECTION_2j2b: str
+  selection tW for 2j2b region
+TEXIT: dict
   Maps simple strings to common TeX strings
 """
-
-import numpy as np
 
 
 def get_device():
@@ -26,22 +24,14 @@ def get_device():
     return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-SD_1J1B = {
-    "OS": (np.equal, True),
-    "elmu": (np.equal, True),
-    "reg1j1b": (np.equal, True),
-}
+SELECTION_1j1b = "(df.OS == True) & (df.elmu == True) & (df.reg1j1b == True)"
+SELECTION_2j1b = "(df.OS == True) & (df.elmu == True) & (df.reg2j1b == True)"
+SELECTION_2j2b = "(df.OS == True) & (df.elmu == True) & (df.reg2j2b == True)"
 
-SD_2J1B = {
-    "OS": (np.equal, True),
-    "elmu": (np.equal, True),
-    "reg2j1b": (np.equal, True),
+TEXIT = {
+    "ttbar": r"$t\bar{t}$",
+    "tW": r"$tW$",
+    "elmu": r"$e\mu$",
+    "tW_DR": r"$tW$",
+    "tW_DS": r"$tW$ (DS)",
 }
-
-SD_2J2B = {
-    "OS": (np.equal, True),
-    "elmu": (np.equal, True),
-    "reg2j2b": (np.equal, True),
-}
-
-TEXIT = {"ttbar": r"$t\bar{t}$", "tW": r"$tW$", "elmu": r"$e\mu$"}
