@@ -75,7 +75,7 @@ def test_selection():
     ds2 = dataset.from_root(
         ["tests/data/test_file.root"],
         name="ds2",
-        selection="(df.reg2j2b==True) & (df.OS == True) & (df.pT_lep1 > 50)",
+        selection="(reg2j2b==True) & (OS == True) & (pT_lep1 > 50)",
     )
     upt = uproot.open("tests/data/test_file.root")["WtLoop_nominal"]
     reg2j2b = upt.array("reg2j2b")

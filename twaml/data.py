@@ -455,8 +455,7 @@ class dataset:
           List of branches to store in the dataset, if None use all
         selection: str
           A string passed to pandas.DataFrame.eval to apply a selection
-          based on branch/column values. Column names must be prepended
-          by ``df.``, e.g. ``(df.reg1j1b == True) & (df.OS == True)``
+          based on branch/column values. e.g. ``(reg1j1b == True) & (OS == True)``
           requires the ``reg1j1b`` and ``OS`` branches to be ``True``.
         label: Optional[int]
           Give the dataset an integer label
@@ -490,7 +489,7 @@ class dataset:
         and ``njets >= 1``, then label it 5.
 
         >>> flist = ["file1.root", "file2.root", "file3.root"]
-        >>> ds = dataset.from_root(flist, selection='(df.nbjets == 1) & (df.njets >= 1)')
+        >>> ds = dataset.from_root(flist, selection='(nbjets == 1) & (njets >= 1)')
         >>> ds.label = 5
 
         Example using extra weights
@@ -557,24 +556,26 @@ class dataset:
         frame_list, weight_list, extra_frame_list = [], [], []
         for t in uproot_trees:
             raw_w = t.array(weight_name)
-            df = t.pandas.df(branches=branches, namedecode="utf-8", executor=executor)
+            raw_f = t.pandas.df(
+                branches=branches, namedecode="utf-8", executor=executor
+            )
             if not allow_weights_in_df:
-                rmthese = [c for c in df.columns if re.match(wpat, c)]
-                df.drop(columns=rmthese, inplace=True)
+                rmthese = [c for c in raw_f.columns if re.match(wpat, c)]
+                raw_f.drop(columns=rmthese, inplace=True)
 
             if w_branches is not None:
                 raw_aw = t.pandas.df(branches=w_branches, namedecode="utf-8")
 
             if selection is not None:
-                iselec = pd.eval(selection)
+                iselec = raw_f.eval(selection)
                 raw_w = raw_w[iselec]
-                df = df[iselec]
+                raw_f = raw_f[iselec]
                 if w_branches is not None:
                     raw_aw = raw_aw[iselec]
 
-            assert len(raw_w) == len(df), "frame length and weight length different"
+            assert len(raw_w) == len(raw_f), "frame length and weight length different"
             weight_list.append(raw_w)
-            frame_list.append(df)
+            frame_list.append(raw_f)
             if w_branches is not None:
                 extra_frame_list.append(raw_aw)
                 assert len(raw_w) == len(
