@@ -2,7 +2,7 @@
 
 """twaml.data module
 
-This module contains classes to abstract datasets using
+This module contains a classe to abstract datasets using
 pandas.DataFrames as the payload for feeding to machine learning
 frameworks and other general data investigating
 
@@ -25,7 +25,7 @@ __all__ = ["dataset", "scale_weight_sum"]
 
 class dataset:
     """A class to define a dataset with a pandas.DataFrame as the payload
-    of the class. The twaml.data module provides a set of functions to
+    of the class. The class provides a set of static functions to
     construct a dataset. The class constructor should be used only in
     very special cases.
 
@@ -67,6 +67,7 @@ class dataset:
       Shape of the main payload dataframe
     wtmetas: Optional[Dict[str, Dict[str]]]
       A dictionary of files to meta dictionaries
+
     """
 
     _weights = None
@@ -121,6 +122,17 @@ class dataset:
         self.tree_name = tree_name
         self._label = label
         self._auxlabel = auxlabel
+
+    @staticmethod
+    def _combine_wtmetas(meta1, meta2) -> Optional[dict]:
+        if meta1 is not None and meta2 is not None:
+            return {**meta1, **meta2}
+        elif meta1 is None and meta2 is not None:
+            return {**meta2}
+        elif meta1 is not None and meta2 is None:
+            return {**meta1}
+        else:
+            return None
 
     @property
     def has_payload(self) -> bool:
@@ -319,11 +331,7 @@ class dataset:
         self._df = pd.concat([self._df, other.df])
         self._weights = np.concatenate([self._weights, other.weights])
         self.files = self.files + other.files
-
-        if other.wtmetas is not None and self.wtmetas is not None:
-            self.wtmetas = {**self.wtmetas, **other.metas}
-        if other.wtmetas is not None and self.wtmetas is None:
-            self.wtmetas = {**other.wtmetas}
+        self.wtmetas = self._combine_wtmetas(self.wtmetas, other.wtmetas)
 
         if self.extra_weights is not None and other.extra_weights is not None:
             self._extra_weights = pd.concat([self._extra_weights, other.extra_weights])
@@ -393,13 +401,7 @@ class dataset:
             label=self._label,
             auxlabel=self._auxlabel,
         )
-
-        if other.wtmetas is not None and self.wtmetas is not None:
-            new_ds.wtmetas = {**self.wtmetas, **other.wtmetas}
-        elif other.wtmetas is None and self.wtmetas is not None:
-            new_ds.wtmetas = {**self.wtmetas}
-        elif other.wtmetas is not None and self.wtmetas is None:
-            new_ds.wtmetas = {**other.wtmetas}
+        new_ds.wtmetas = self._combine_wtmetas(self.wtmetas, other.wtmetas)
 
         if self.extra_weights is not None and other.extra_weights is not None:
             new_aw = pd.concat([self.extra_weights, other.extra_weights])
