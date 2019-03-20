@@ -320,6 +320,11 @@ class dataset:
         self._weights = np.concatenate([self._weights, other.weights])
         self.files = self.files + other.files
 
+        if other.wtmetas is not None and self.wtmetas is not None:
+            self.wtmetas = {**self.wtmetas, **other.metas}
+        if other.wtmetas is not None and self.wtmetas is None:
+            self.wtmetas = {**other.wtmetas}
+
         if self.extra_weights is not None and other.extra_weights is not None:
             self._extra_weights = pd.concat([self._extra_weights, other.extra_weights])
         else:
@@ -388,6 +393,13 @@ class dataset:
             label=self._label,
             auxlabel=self._auxlabel,
         )
+
+        if other.wtmetas is not None and self.wtmetas is not None:
+            new_ds.wtmetas = {**self.wtmetas, **other.wtmetas}
+        elif other.wtmetas is None and self.wtmetas is not None:
+            new_ds.wtmetas = {**self.wtmetas}
+        elif other.wtmetas is not None and self.wtmetas is None:
+            new_ds.wtmetas = {**other.wtmetas}
 
         if self.extra_weights is not None and other.extra_weights is not None:
             new_aw = pd.concat([self.extra_weights, other.extra_weights])
