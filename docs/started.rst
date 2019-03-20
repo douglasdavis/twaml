@@ -12,7 +12,7 @@ It is highy recommended to use the `Anaconda
 required libraries (outside of the bleeding edge machine learning
 packages) will be included with Anaconda environments.
 
-The bare requirements for data handling, plotting, and testing includ
+The bare requirements for data handling, plotting, and testing include
 (enforced by ``requirements.txt``, see file for verions):
 
 - uproot
@@ -21,6 +21,7 @@ The bare requirements for data handling, plotting, and testing includ
 - matplotlib
 - h5py
 - pytables
+- numexpr (to ensure pandas.eval acceleration)
 
 Since twaml is in an early development stage specific versions may
 change randomly.  listed and tests are run with the latest available
@@ -62,9 +63,9 @@ Start with a fresh Anaconda virtual environment:
 
 .. code-block:: none
 
-   $ conda create -n twaml python=3.6
+   $ conda create -n twaml python=3.7
    $ conda activate twaml
-   $ conda install numpy matplotlib pandas scikit-learn pytables pytest h5py
+   $ conda install numpy matplotlib pandas scikit-learn pytables pytest h5py numexpr
    $ pip install uproot
    $ conda install pytorch torchvision cuda100 -c pytorch ## requires recent nvidia linux drivers
    $ conda install tensorflow-gpu ## or just tensorflow
