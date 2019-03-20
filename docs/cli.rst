@@ -21,7 +21,7 @@ greater than 50 to save the event.
 .. code-block:: none
 
    $ twaml-root2pytables -i file.root -o file.h5 --branches b1 b2 \
-         --selection "(df.elmu == True) & (df.pT_lep1 > 50)"
+         --selection "(elmu == True) & (pT_lep1 > 50)"
 
 The docs for the function that is being called:
 
