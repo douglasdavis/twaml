@@ -69,11 +69,11 @@ def root2pytables():
         help="weight branch name",
     )
     parser.add_argument(
-        "--extra-weights",
+        "--auxweights",
         type=str,
         nargs="+",
         required=False,
-        help="extra weights to save",
+        help="extra auxiliary weights to save",
     )
     parser.add_argument(
         "--selection",
@@ -84,7 +84,7 @@ def root2pytables():
     parser.add_argument(
         "--detect-weights",
         action="store_true",
-        help="detect weights in the dataset, --extra-weights overrides this",
+        help="detect weights in the dataset, --auxweights overrides this",
     )
     parser.add_argument(
         "--nthreads",
@@ -111,7 +111,7 @@ def root2pytables():
         selection=args.selection,
         weight_name=args.weight_name,
         branches=args.branches,
-        extra_weights=args.extra_weights,
+        auxweights=args.auxweights,
         detect_weights=args.detect_weights,
         executor=xtor,
         wtloop_meta=True,

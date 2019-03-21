@@ -106,19 +106,19 @@ def test_append():
     np.testing.assert_array_almost_equal(comb_df.get_values(), ds1.df.get_values(), 5)
 
 
-def test_extra_weights():
+def test_auxweights():
     branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
     ds1 = dataset.from_root(
         ["tests/data/test_file.root"],
         name="myds",
         branches=branches,
-        extra_weights=["phi_lep1", "phi_lep2"],
+        auxweights=["phi_lep1", "phi_lep2"],
     )
     ds2 = dataset.from_root(
         ["tests/data/test_file.root"],
         name="ds2",
         branches=branches,
-        extra_weights=["phi_lep1", "phi_lep2"],
+        auxweights=["phi_lep1", "phi_lep2"],
     )
     ds1.append(ds2)
 
@@ -126,18 +126,18 @@ def test_extra_weights():
         ["tests/data/test_file.root"],
         name="myds",
         branches=branches,
-        extra_weights=["phi_lep1", "phi_lep2"],
+        auxweights=["phi_lep1", "phi_lep2"],
     )
     dsb = dataset.from_root(
         ["tests/data/test_file.root"],
         name="ds2",
         branches=branches,
-        extra_weights=["phi_lep1", "phi_lep2"],
+        auxweights=["phi_lep1", "phi_lep2"],
     )
     dsc = dsa + dsb
 
     np.testing.assert_array_almost_equal(
-        ds1.extra_weights["phi_lep1"], dsc.extra_weights["phi_lep1"], 5
+        ds1.auxweights["phi_lep1"], dsc.auxweights["phi_lep1"], 5
     )
 
     dsc.change_weights("phi_lep2")
@@ -149,14 +149,14 @@ def test_extra_weights():
     )
     ds2.change_weights("phi_lep2")
     np.testing.assert_array_almost_equal(ds2.weights, pl2, 5)
-    assert "phi_lep2" not in ds2.extra_weights
-    assert "weight_nominal" in ds2.extra_weights
+    assert "phi_lep2" not in ds2.auxweights
+    assert "weight_nominal" in ds2.auxweights
 
     ds2.to_pytables("outfile1.h5")
     ds2pt = dataset.from_pytables("outfile1.h5", "ds2", weight_name="phi_lep2")
-    print(ds2pt.extra_weights)
+    print(ds2pt.auxweights)
     np.testing.assert_array_almost_equal(
-        ds2pt.extra_weights["weight_nominal"].to_numpy(), nw2
+        ds2pt.auxweights["weight_nominal"].to_numpy(), nw2
     )
     os.remove("outfile1.h5")
     assert True
@@ -232,14 +232,14 @@ def test_columnkeeping():
         ["tests/data/test_file.root"],
         name="myds",
         branches=["met", "sumet", "pT_jet2", "reg2j2b"],
-        extra_weights=["pT_lep1", "pT_lep2", "pT_jet1"],
+        auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
     )
     keep_c = ["reg2j2b", "pT_jet2"]
     keep_w = ["pT_lep1", "pT_jet1"]
     ds1.keep_columns(keep_c)
     ds1.keep_weights(keep_w)
     list_of_col = list(ds1.df.columns)
-    list_of_exw = list(ds1.extra_weights.columns)
+    list_of_exw = list(ds1.auxweights.columns)
     assert keep_c == list_of_col
     assert keep_w == list_of_exw
 
@@ -249,7 +249,7 @@ def test_columnrming():
         ["tests/data/test_file.root"],
         name="myds",
         branches=["met", "sumet", "pT_jet2", "reg2j2b"],
-        extra_weights=["pT_lep1", "pT_lep2", "pT_jet1"],
+        auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
     )
 
     ds1.rmcolumns(["met", "sumet"])
