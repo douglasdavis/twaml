@@ -37,6 +37,7 @@ For building documentation
 
 - sphinx
 - sphinx_rtd_theme
+- sphinx-autodoc-typehints
 - m2r
 
 
