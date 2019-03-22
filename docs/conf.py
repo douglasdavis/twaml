@@ -42,14 +42,17 @@ release = twaml.version.version
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
+    "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinxcontrib.programoutput",
     "m2r",
 ]
+
+set_type_checking_flag = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -204,4 +207,5 @@ autoclass_content = "both"
 intersphinx_mapping = {
     "python": ("http://docs.python.org/", None),
     "numpy": ("http://docs.scipy.org/doc/numpy", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/stable/", None),
 }

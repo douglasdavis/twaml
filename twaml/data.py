@@ -16,6 +16,7 @@ import re
 import yaml
 from pathlib import PosixPath
 from typing import List, Dict, Tuple, Optional, Union
+from concurrent.futures import ThreadPoolExecutor
 import logging
 
 log = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class dataset:
       point. This is the name
     weights: numpy.ndarray
       The array of event weights
-    df: pandas.DataFrame
+    df: :class:`pandas.DataFrame`
       The payload of the class, a dataframe
     auxweights: Optional[pandas.DataFrame]
       Extra weights to have access too
@@ -55,9 +56,9 @@ class dataset:
       Optional dataset label (as an int)
     auxlabel: Optional[int]
       Optional auxiliary label (as an int) - sometimes we need two labels
-    label_asarray: Optional[np.ndarray]
+    label_asarray: Optional[numpy.ndarray]
       Optional dataset label (as an array of ints)
-    auxlabel_asarray: Optional[np.ndarray]
+    auxlabel_asarray: Optional[numpy.ndarray]
       Optional dataset auxiliary label (as an array of ins)
     has_payload: bool
       Flag to know that the dataset actually wraps data
@@ -248,7 +249,7 @@ class dataset:
         weights to be separated from the payload's main dataframe.
 
         Internally this is done by calling
-        ``pd.DataFrame.drop(..., inplace=True)`` on the payload
+        :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload
 
         """
         import re
@@ -260,7 +261,8 @@ class dataset:
     def rmcolumns_re(self, pattern: str) -> None:
         """Remove some columns from the payload based on regex paterns
 
-        Uses ``pd.DataFrame.drop(..., inplace=True)``.
+        Internally this is done by calling
+        :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload
 
         Parameters
         ----------
@@ -274,7 +276,8 @@ class dataset:
     def rmcolumns(self, cols: List[str]) -> None:
         """Remove columns from the dataset
 
-        Uses ``pd.DataFrame.drop(..., inplace=True)``.
+        Internally this is done by calling
+        :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload
 
         Parameters
         ----------
@@ -288,7 +291,14 @@ class dataset:
         """Change the main weight of the dataset
 
         this function will swap the current main weight array of the
-        dataset with one in the auxweights frame.
+        dataset with one in the ``auxweights`` frame (based on its
+        name in the ``auxweights`` frame).
+
+        Parameters
+        ----------
+        wname:
+          name of weight in ``auxweight`` DataFrame to turn into the main weight.
+
         """
         assert self._auxweights is not None, "extra weights do not exist"
 
@@ -352,14 +362,17 @@ class dataset:
         - ``wtloop_metas`` as ``{name}_wtloop_metas``
 
         These properties are wrapped in a pandas DataFrame (if they
-        are not already) to be stored in a ``.h5`` file. The
+        are not already) to be stored in a .h5 file. The
         :meth:`from_pytables` is designed to read in this output; so
         the standard use case is to call this function to store a
         dataset that was intialized via :meth:`from_root`.
 
+        Internally this function uses :meth:`pandas.DataFrame.to_hdf`
+        on a number of structures.
+
         Parameters
         ----------
-        file_name : str
+        file_name:
           output file name,
 
         Examples
@@ -454,43 +467,43 @@ class dataset:
         allow_weights_in_df: bool = False,
         auxweights: Optional[List[str]] = None,
         detect_weights: bool = False,
-        executor: Optional["ThreadPoolExecutor"] = None,
+        nthreads: Optional[int] = None,
         wtloop_meta: bool = False,
     ) -> "dataset":
         """Initialize a dataset from ROOT files
 
         Parameters
         ----------
-        input_files: str or List[str]
+        input_files:
           Single or list of ROOT input file(s) to use
-        name: str
+        name:
           Name of the dataset (if none use first file name)
-        tree_name: str
+        tree_name:
           Name of the tree in the file to use
-        weight_name: str
+        weight_name:
           Name of the weight branch
-        branches: List[str]
+        branches:
           List of branches to store in the dataset, if None use all
-        selection: str
+        selection:
           A string passed to pandas.DataFrame.eval to apply a selection
           based on branch/column values. e.g. ``(reg1j1b == True) & (OS == True)``
           requires the ``reg1j1b`` and ``OS`` branches to be ``True``.
-        label: Optional[int]
+        label:
           Give the dataset an integer label
-        auxlabel: Optional[int]
+        auxlabel:
           Give the dataset an integer auxiliary label
-        allow_weights_in_df: bool
+        allow_weights_in_df:
           Allow "^weight_" branches in the payload dataframe
-        auxweights: Optional[List[str]]
+        auxweights:
           Extra weights to store in a second dataframe.
-        detect_weights: bool
+        detect_weights:
           If True, fill the auxweights df with all "^weight_"
           branches If ``auxweights`` is not None, this option is
           ignored.
-        executor: Optional[ThreadPoolExecutor]
-          Fill frames using multiple threads,
-          see uproot.TTreeMethods_pandas.df
-        wtloop_meta: bool
+        nthreads:
+          Number of threads to use reading the ROOT tree
+          (see uproot.TTreeMethods_pandas.df)
+        wtloop_meta:
           grab and store the `WtLoop_meta` YAML entries. stored as a dictionary
           of the form ``{ str(filename) : dict(yaml) }`` in the class variable
           ``wtloop_metas``.
@@ -520,11 +533,9 @@ class dataset:
         >>> ds = dataset.from_root(flist, name="myds", weight_name="weight_nominal",
         ...                        detect_weights=True)
 
-        Example using an executor (16 threads):
+        Example using a ThreadPoolExecutor (16 threads):
 
-        >>> from concurrent.futures import ThreadPoolExecutor
-        >>> executor = ThreadPoolExecutor(16)
-        >>> ds = dataset.from_root(flist, name="myds", executor=executor)
+        >>> ds = dataset.from_root(flist, name="myds", nthreads=16)
 
         """
 
@@ -537,6 +548,10 @@ class dataset:
                 input_files = [input_files]
             else:
                 input_files = list(input_files)
+
+        executor = None
+        if nthreads is not None:
+            executor = ThreadPoolExecutor(nthreads)
 
         ds = dataset()
         ds._init(
@@ -630,19 +645,19 @@ class dataset:
 
         Parameters
         ----------
-        file_name: str
+        file_name:
           Name of h5 file containing the payload
-        name: str
+        name:
           Name of the dataset inside the h5 file. If ``"auto"`` (default),
           we attempt to determine the name automatically from the h5 file.
-        tree_name: str
+        tree_name:
           Name of tree where dataset originated (only for reference)
-        weight_name: str
+        weight_name:
           Name of the weight array inside the h5 file. If ``"auto"`` (default),
           we attempt to determine the name automatically from the h5 file.
-        label: Optional[int]
+        label:
           Give the dataset an integer label
-        auxlabel: Optional[int]
+        auxlabel:
           Give the dataset an integer auxiliary label
 
         Examples
@@ -713,19 +728,19 @@ class dataset:
 
         Parameters
         ----------
-        file_name: str
+        file_name:
           Name of h5 file containing the payload
-        name: str
+        name:
           Name of the dataset you would like to define
-        columns: List[str]
+        columns:
           Names of columns (branches) to include in payload
-        tree_name: str
+        tree_name:
           Name of tree dataset originates from (HDF5 dataset name)
         weight_name: str
           Name of the weight array inside the h5 file
-        label: Optional[int]
+        label:
           Give the dataset an integer label
-        auxlabel: Optional[int]
+        auxlabel:
           Give the dataset an integer auxiliary label
 
         Examples
@@ -762,9 +777,9 @@ def scale_weight_sum(to_update: "dataset", reference: "dataset") -> None:
 
     Parameters
     ----------
-    to_update : twanet.data.dataset
+    to_update:
         dataset with weights to be scaled
-    reference : twanet.data.dataset
+    reference
         dataset to scale to
 
     """

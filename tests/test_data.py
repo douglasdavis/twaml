@@ -37,9 +37,9 @@ def test_nothing():
 def test_with_executor():
     from concurrent.futures import ThreadPoolExecutor
 
-    executor = ThreadPoolExecutor(4)
+
     lds = dataset.from_root(
-        ["tests/data/test_file.root"], branches=branches, executor=executor
+        ["tests/data/test_file.root"], branches=branches, nthreads=4
     )
     np.testing.assert_array_almost_equal(lds.weights, ds.weights, 8)
 
