@@ -102,8 +102,6 @@ def root2pytables():
     for f in args.input_files:
         log.info(f"- {f}")
 
-    xtor = ThreadPoolExecutor(args.nthreads) if args.nthreads > 1 else None
-
     ds = dataset.from_root(
         args.input_files,
         name=args.name,
@@ -113,7 +111,7 @@ def root2pytables():
         branches=args.branches,
         auxweights=args.auxweights,
         detect_weights=args.detect_weights,
-        executor=xtor,
+        nthreads=args.nthreads if nthreads > 1 else None,
         wtloop_meta=True,
     )
     ds.to_pytables(args.out_file)
