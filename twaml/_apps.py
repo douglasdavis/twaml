@@ -96,11 +96,11 @@ def root2pytables():
 
     args = parser.parse_args()
 
-    log.info(
-        "Converting the following ROOT files to pytables ({}):".format(args.out_file)
-    )
+    log.info(f"Creating pytables dataset with name '{args.name}' in {args.out_file}")
+    log.info(f"  using selection '{args.selection}'")
+    log.info(f"  on the following ROOT files:")
     for f in args.input_files:
-        log.info(f"- {f}")
+        log.info(f"   - {f}")
 
     ds = dataset.from_root(
         args.input_files,
@@ -111,7 +111,7 @@ def root2pytables():
         branches=args.branches,
         auxweights=args.auxweights,
         detect_weights=args.detect_weights,
-        nthreads=args.nthreads if nthreads > 1 else None,
+        nthreads=args.nthreads if args.nthreads > 1 else None,
         wtloop_meta=True,
     )
     ds.to_pytables(args.out_file)
