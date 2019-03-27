@@ -4,6 +4,7 @@ twaml command line applications
 
 import argparse
 from twaml.data import dataset
+import twaml.utils
 import yaml
 
 
@@ -100,29 +101,38 @@ def root2pytables():
         raise ValueError("--out-file argument must end in .h5")
 
     ## if selection is not none and is a file ending in .yml or .yaml
-    ## we do the yaml based selections
+    ## we do the yaml based selections. also a shortcut is implemented
+    ## as a special case
     if args.selection is not None:
-        if args.selection.endswith(".yml") or args.selection.endswith(".yaml"):
+        if args.selection == "freq_shortcut":
+            selection_yaml = {
+                "r1j1b": twaml.utils.SELECTION_1j1b,
+                "r2j1b": twaml.utils.SELECTION_2j1b,
+                "r2j2b": twaml.utils.SELECTION_2j2b,
+                "3j": twaml.utils.SELECTION_3j,
+            }
+
+        elif args.selection.endswith(".yml") or args.selection.endswith(".yaml"):
             with open(args.selection) as f:
                 selection_yaml = yaml.full_load(f)
 
-            full_ds = dataset.from_root(
-                args.input_files,
-                name=args.name,
-                tree_name=args.tree_name,
-                weight_name=args.weight_name,
-                branches=args.branches,
-                auxweights=args.auxweights,
-                detect_weights=args.detect_weights,
-                nthreads=args.nthreads if args.nthreads > 1 else None,
-                wtloop_meta=True,
-            )
+        full_ds = dataset.from_root(
+            args.input_files,
+            name=args.name,
+            tree_name=args.tree_name,
+            weight_name=args.weight_name,
+            branches=args.branches,
+            auxweights=args.auxweights,
+            detect_weights=args.detect_weights,
+            nthreads=args.nthreads if args.nthreads > 1 else None,
+            wtloop_meta=True,
+        )
 
-            selected_dses = full_ds.apply_selections(selection_yaml)
-            anchor = args.out_file.split(".h5")[0]
-            for sdk, sdv in selected_dses.items():
-                sdv.to_pytables(f"{anchor}_{sdk}.h5")
-            return 0
+        selected_dses = full_ds.apply_selections(selection_yaml)
+        anchor = args.out_file.split(".h5")[0]
+        for sdk, sdv in selected_dses.items():
+            sdv.to_pytables(f"{anchor}_{sdk}.h5")
+        return 0
 
     ## otherwise just take the string or None
     ds = dataset.from_root(

@@ -12,6 +12,8 @@ SELECTION_2j1b: str
   selection tW for 2j1b region
 SELECTION_2j2b: str
   selection tW for 2j2b region
+SELECTION_3j: str
+  selection tW for 3j region
 TEXIT: dict
   Maps simple strings to common TeX strings
 """
@@ -26,6 +28,7 @@ def get_device():
 SELECTION_1j1b = "(OS == True) & (elmu == True) & (reg1j1b == True)"
 SELECTION_2j1b = "(OS == True) & (elmu == True) & (reg2j1b == True)"
 SELECTION_2j2b = "(OS == True) & (elmu == True) & (reg2j2b == True)"
+SELECTION_3j = "(OS == True) & (elmu == True) & (reg3j == True)"
 
 TEXIT = {
     "ttbar": r"$t\bar{t}$",

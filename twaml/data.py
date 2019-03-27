@@ -392,6 +392,7 @@ class dataset:
         """
 
         log.info(f"Creating pytables dataset with name '{self.name}' in {file_name}")
+        log.info(f"  selection used: '{self.was_selected_with}'")
         log.info(f"  according to the dataset class the original source was:")
         for f in self.files:
             log.info(f"   - {f}")
@@ -712,7 +713,6 @@ class dataset:
         with h5py.File(file_name, "r") as f:
             if f"{name}_wtloop_metas" in f:
                 wtloop_metas = pd.read_hdf(file_name, f"{name}_wtloop_metas")
-                print(wtloop_metas)
                 ds.wtloop_metas = {
                     fn: yaml.full_load(wtloop_metas[fn].to_numpy()[0])
                     for fn in wtloop_metas.columns
