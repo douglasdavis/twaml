@@ -11,6 +11,7 @@ packages:
   - python-pytest
   - python-lz4
   - python-scikit-learn
+  - python-wheel
   - hdf5
   - twine
 sources:
