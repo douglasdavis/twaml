@@ -35,9 +35,6 @@ def test_nothing():
 
 
 def test_with_executor():
-    from concurrent.futures import ThreadPoolExecutor
-
-
     lds = dataset.from_root(
         ["tests/data/test_file.root"], branches=branches, nthreads=4
     )
@@ -259,3 +256,30 @@ def test_columnrming():
         and "pT_jet2" in list_of_cols
         and "reg2j2b" in list_of_cols
     )
+
+
+def test_apply_selections():
+    ds2 = dataset.from_root(
+        "tests/data/test_file.root",
+        auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
+        name="myds",
+    )
+
+    splits = ds2.apply_selections(
+        {"s1": "(pT_lep2 > 30) & (pT_jet1 < 50)", "s2": "(reg2j1b==True)"}
+    )
+
+    t = uproot.open("tests/data/test_file.root")["WtLoop_nominal"]
+    pT_lep2_g30 = t.array("pT_lep2") > 30
+    pT_jet1_l50 = t.array("pT_jet1") < 50
+    reg2j1b_ist = t.array("reg2j1b") == True
+
+    pT_lep1 = t.array("pT_lep1")
+    s1_pT_lep1 = splits["s1"].df.pT_lep1.to_numpy()
+    s2_pT_lep1 = splits["s2"].df.pT_lep1.to_numpy()
+
+    pT_lep1_manual_s1 = pT_lep1[pT_lep2_g30 & pT_jet1_l50]
+    pT_lep1_manual_s2 = pT_lep1[reg2j1b_ist]
+
+    np.testing.assert_allclose(s1_pT_lep1, pT_lep1_manual_s1)
+    np.testing.assert_allclose(s2_pT_lep1, pT_lep1_manual_s2)

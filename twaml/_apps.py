@@ -3,10 +3,8 @@ twaml command line applications
 """
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor
-import numpy as np
 from twaml.data import dataset
-import logging
+import yaml
 
 
 def root2pytables():
@@ -16,7 +14,6 @@ def root2pytables():
     ``twaml.data.dataset`` class.
 
     """
-    log = logging.getLogger("root2pytables")
     parser = argparse.ArgumentParser(
         description=(
             "Convert ROOT files to a pytables hdf5 dataset "
@@ -79,7 +76,10 @@ def root2pytables():
         "--selection",
         type=str,
         required=False,
-        help="A selection string (see `selection` argument docs in `twaml.dataset.from_root`)",
+        help=(
+            "A selection string or YAML file containing a map of selections "
+            "(see `selection` argument docs in `twaml.dataset.from_root`)"
+        ),
     )
     parser.add_argument(
         "--detect-weights",
@@ -96,12 +96,35 @@ def root2pytables():
 
     args = parser.parse_args()
 
-    log.info(f"Creating pytables dataset with name '{args.name}' in {args.out_file}")
-    log.info(f"  using selection '{args.selection}'")
-    log.info(f"  on the following ROOT files:")
-    for f in args.input_files:
-        log.info(f"   - {f}")
+    if not args.out_file.endswith(".h5"):
+        raise ValueError("--out-file argument must end in .h5")
 
+    ## if selection is not none and is a file ending in .yml or .yaml
+    ## we do the yaml based selections
+    if args.selection is not None:
+        if args.selection.endswith(".yml") or args.selection.endswith(".yaml"):
+            with open(args.selection) as f:
+                selection_yaml = yaml.full_load(f)
+
+            full_ds = dataset.from_root(
+                args.input_files,
+                name=args.name,
+                tree_name=args.tree_name,
+                weight_name=args.weight_name,
+                branches=args.branches,
+                auxweights=args.auxweights,
+                detect_weights=args.detect_weights,
+                nthreads=args.nthreads if args.nthreads > 1 else None,
+                wtloop_meta=True,
+            )
+
+            selected_dses = full_ds.apply_selections(selection_yaml)
+            anchor = args.out_file.split(".h5")[0]
+            for sdk, sdv in selected_dses.items():
+                sdv.to_pytables(f"{anchor}_{sdk}.h5")
+            return 0
+
+    ## otherwise just take the string or None
     ds = dataset.from_root(
         args.input_files,
         name=args.name,

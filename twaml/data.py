@@ -15,7 +15,7 @@ import numpy as np
 import re
 import yaml
 from pathlib import PosixPath
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Tuple, Optional, Union, Dict
 from concurrent.futures import ThreadPoolExecutor
 import logging
 
@@ -51,7 +51,7 @@ class dataset:
     df: :class:`pandas.DataFrame`
       The payload of the class, a dataframe
     auxweights: Optional[pandas.DataFrame]
-      Extra weights to have access too
+      Auxiliary weights to have access too
     label: Optional[int]
       Optional dataset label (as an int)
     auxlabel: Optional[int]
@@ -68,6 +68,9 @@ class dataset:
       Shape of the main payload dataframe
     wtloop_metas: Optional[Dict[str, Dict[str]]]
       A dictionary of files to meta dictionaries
+    was_selected_with: Optional[str]
+      A string (in :meth:`pandas.DataFrame.eval` form) that all of data in
+      the dataset had to satisfy
 
     """
 
@@ -81,6 +84,7 @@ class dataset:
     _label = None
     _auxlabel = None
     wtloop_metas = None
+    was_selected_with = None
 
     def _init(
         self,
@@ -210,14 +214,14 @@ class dataset:
         raise NotImplementedError("Cannot set shape manually")
 
     def _set_df_and_weights(
-        self, df: pd.DataFrame, w: np.ndarray, extra: Optional[pd.DataFrame] = None
+        self, df: pd.DataFrame, w: np.ndarray, auxw: Optional[pd.DataFrame] = None
     ) -> None:
         assert len(df) == len(w), "unequal length df and weights"
         self._df = df
         self._weights = w
-        if extra is not None:
-            assert len(df) == len(extra), "unequal length df and extra weights"
-            self._auxweights = extra
+        if auxw is not None:
+            assert len(df) == len(auxw), "unequal length df and auxw weights"
+            self._auxweights = auxw
 
     def keep_columns(self, cols: List[str]) -> None:
         """Drop all columns not included in ``cols``
@@ -230,13 +234,13 @@ class dataset:
         self._df = self._df[cols]
 
     def keep_weights(self, weights: List[str]) -> None:
-        """Drop all columns from the extra weights frame that are not in
+        """Drop all columns from the aux weights frame that are not in
         ``weights``
 
         Parameters
         ----------
         weights: List[str]
-          Weights to keep in the extra weights frame
+          Weights to keep in the aux weights frame
         """
         self._auxweights = self._auxweights[weights]
 
@@ -300,7 +304,7 @@ class dataset:
           name of weight in ``auxweight`` DataFrame to turn into the main weight.
 
         """
-        assert self._auxweights is not None, "extra weights do not exist"
+        assert self._auxweights is not None, "aux weights do not exist"
 
         old_name = self.weight_name
         old_weights = self.weights
@@ -318,8 +322,8 @@ class dataset:
         We perform concatenations of the dataframes and weights to
         update the existing dataset's payload.
 
-        if one dataset has extra weights and the other doesn't,
-        the extra weights are dropped.
+        if one dataset has aux weights and the other doesn't,
+        the aux weights are dropped.
 
         Parameters
         ----------
@@ -335,7 +339,7 @@ class dataset:
         if self._auxweights is not None and other.auxweights is not None:
             assert (
                 self._auxweights.shape[1] == other.auxweights.shape[1]
-            ), "extra weights are different lengths"
+            ), "aux weights are different lengths"
 
         self._df = pd.concat([self._df, other.df])
         self._weights = np.concatenate([self._weights, other.weights])
@@ -386,6 +390,12 @@ class dataset:
         'myds'
 
         """
+
+        log.info(f"Creating pytables dataset with name '{self.name}' in {file_name}")
+        log.info(f"  according to the dataset class the original source was:")
+        for f in self.files:
+            log.info(f"   - {f}")
+
         if PosixPath(file_name).exists():
             log.warning(f"{file_name} exists, overwriting")
         weights_frame = pd.DataFrame(dict(weights=self._weights))
@@ -404,8 +414,8 @@ class dataset:
         We perform concatenations of the dataframes and weights to
         generate a new dataset with the combined a new payload.
 
-        if one dataset has extra weights and the other doesn't,
-        the extra weights are dropped.
+        if one dataset has aux weights and the other doesn't,
+        the aux weights are dropped.
 
         """
         assert self.has_payload, "Unconstructed df (self)"
@@ -416,7 +426,7 @@ class dataset:
         if self._auxweights is not None and other.auxweights is not None:
             assert (
                 self._auxweights.shape[1] == other.auxweights.shape[1]
-            ), "extra weights are different lengths"
+            ), "aux weights are different lengths"
 
         new_weights = np.concatenate([self.weights, other.weights])
         new_df = pd.concat([self.df, other.df])
@@ -439,7 +449,7 @@ class dataset:
         else:
             new_aw = None
 
-        new_ds._set_df_and_weights(new_df, new_weights, extra=new_aw)
+        new_ds._set_df_and_weights(new_df, new_weights, auxw=new_aw)
         return new_ds
 
     def __len__(self) -> int:
@@ -495,7 +505,7 @@ class dataset:
         allow_weights_in_df:
           Allow "^weight_" branches in the payload dataframe
         auxweights:
-          Extra weights to store in a second dataframe.
+          Auxiliary weights to store in a second dataframe.
         detect_weights:
           If True, fill the auxweights df with all "^weight_"
           branches If ``auxweights`` is not None, this option is
@@ -523,12 +533,12 @@ class dataset:
         >>> ds = dataset.from_root(flist, selection='(nbjets == 1) & (njets >= 1)')
         >>> ds.label = 5
 
-        Example using extra weights
+        Example using aux weights
 
         >>> ds = dataset.from_root(flist, name="myds", weight_name="weight_nominal",
         ...                        auxweights=["weight_sys_radLo", " weight_sys_radHi"])
 
-        Example where we detect extra weights automatically
+        Example where we detect aux weights automatically
 
         >>> ds = dataset.from_root(flist, name="myds", weight_name="weight_nominal",
         ...                        detect_weights=True)
@@ -586,7 +596,7 @@ class dataset:
         else:
             w_branches = None
 
-        frame_list, weight_list, extra_frame_list = [], [], []
+        frame_list, weight_list, aux_frame_list = [], [], []
         for t in uproot_trees:
             raw_w = t.array(weight_name)
             raw_f = t.pandas.df(
@@ -610,7 +620,7 @@ class dataset:
             weight_list.append(raw_w)
             frame_list.append(raw_f)
             if w_branches is not None:
-                extra_frame_list.append(raw_aw)
+                aux_frame_list.append(raw_aw)
                 assert len(raw_w) == len(
                     raw_aw
                 ), "aux weight length and weight length different"
@@ -618,11 +628,11 @@ class dataset:
         weights_array = np.concatenate(weight_list)
         df = pd.concat(frame_list)
         if w_branches is not None:
-            aw_df = pd.concat(extra_frame_list)
+            aw_df = pd.concat(aux_frame_list)
         else:
             aw_df = None
 
-        ds._set_df_and_weights(df, weights_array, extra=aw_df)
+        ds._set_df_and_weights(df, weights_array, auxw=aw_df)
 
         return ds
 
@@ -640,7 +650,7 @@ class dataset:
 
         The payload is extracted from the .h5 pytables files using the
         name of the dataset and the weight name. If the name of the
-        dataset doesn't exist in the file you'll crash. Extra weights
+        dataset doesn't exist in the file you'll crash. Aux weights
         are retrieved if available.
 
         Parameters
@@ -684,9 +694,9 @@ class dataset:
         main_weight_frame = pd.read_hdf(file_name, f"{name}_{weight_name}")
         with h5py.File(file_name, "r") as f:
             if f"{name}_auxweights" in f:
-                extra_frame = pd.read_hdf(file_name, f"{name}_auxweights")
+                aux_frame = pd.read_hdf(file_name, f"{name}_auxweights")
             else:
-                extra_frame = None
+                aux_frame = None
         w_array = main_weight_frame.weights.to_numpy()
         ds = dataset()
         ds._init(
@@ -698,15 +708,16 @@ class dataset:
             auxlabel=auxlabel,
         )
 
+        ds._set_df_and_weights(main_frame, w_array, auxw=aux_frame)
         with h5py.File(file_name, "r") as f:
-            if "wtloop_metas" in f:
+            if f"{name}_wtloop_metas" in f:
                 wtloop_metas = pd.read_hdf(file_name, f"{name}_wtloop_metas")
+                print(wtloop_metas)
                 ds.wtloop_metas = {
                     fn: yaml.full_load(wtloop_metas[fn].to_numpy()[0])
                     for fn in wtloop_metas.columns
                 }
 
-        ds._set_df_and_weights(main_frame, w_array, extra=extra_frame)
         return ds
 
     @staticmethod
@@ -769,11 +780,64 @@ class dataset:
         ds._set_df_and_weights(frame, w_array)
         return ds
 
+    def apply_selections(self, selections: Dict[str, str]) -> Dict[str, "dataset"]:
+        """Based on a dictionary of selections, break the dataset into a set
+        of multiple (finer grained) datasets.
+
+        Parameters
+        ----------
+        selections:
+          Dictionary of selections in the form ``{ name : selection }``.
+
+        Returns
+        -------
+        Dict[str, dataset]
+          A dictionary of datasets satisfying the selections
+
+        Examples
+        --------
+
+        A handful of selections with all requiring ``OS`` and ``elmu``
+        to be true, while changing the ``reg{...}`` requirement.
+
+        >>> selections = { '1j1b' : '(reg1j1b == True) & (OS == True) & (elmu == True)',
+        ...                '2j1b' : '(reg2j1b == True) & (OS == True) & (elmu == True)',
+        ...                '2j2b' : '(reg2j2b == True) & (OS == True) & (elmu == True)',
+        ...                '3j' : '(reg3j == True) & (OS == True) & (elmu == True)'}
+        >>> selected_datasets = ds.apply_selections(selections)
+
+        """
+        breaks = {}
+        for selk, selv in selections.items():
+            mask = self.df.eval(selv)
+            new_df = self.df[mask]
+            new_weights = self.weights[mask]
+            new_auxweights = None
+            if self.auxweights is not None:
+                new_auxweights = self.auxweights[mask]
+            new_meta = self.wtloop_metas
+            new_ds = dataset()
+            new_ds._init(
+                self.files,
+                self.name,
+                self.tree_name,
+                self.weight_name,
+                label=self.label,
+                auxlabel=self.auxlabel,
+            )
+            new_ds._set_df_and_weights(new_df, new_weights, new_auxweights)
+            new_ds.wtloop_metas = new_meta
+            new_ds.was_selected_with = selv
+            breaks[selk] = new_ds
+
+        return breaks
+
+
 
 def scale_weight_sum(to_update: "dataset", reference: "dataset") -> None:
-    """
-    Scale the weights of the `to_update` dataset such that the sum of
-    weights are equal to the sum of weights of the `reference` dataset.
+    """Scale the weights of the `to_update` dataset such that the sum of
+    weights are equal to the sum of weights of the `reference`
+    dataset.
 
     Parameters
     ----------
