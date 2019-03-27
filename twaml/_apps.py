@@ -109,7 +109,7 @@ def root2pytables():
                 "r1j1b": twaml.utils.SELECTION_1j1b,
                 "r2j1b": twaml.utils.SELECTION_2j1b,
                 "r2j2b": twaml.utils.SELECTION_2j2b,
-                "3j": twaml.utils.SELECTION_3j,
+                "r3j": twaml.utils.SELECTION_3j,
             }
 
         elif args.selection.endswith(".yml") or args.selection.endswith(".yaml"):
