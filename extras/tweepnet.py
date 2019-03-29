@@ -23,7 +23,7 @@ rseed = 414
 
 
 def simple_model(
-    inshape, nlayers=5, nnode=64, lr=0.03, momentum=0.7, opt=None, plot=None
+    inshape, nlayers=8, nnode=64, lr=0.001, momentum=0.7, opt=None, plot=None
 ):
     input_layer = Input(shape=inshape, name="Input")
     dense_layer = Dense(nnode, activation="elu", name="Dense1")(input_layer)
@@ -55,9 +55,9 @@ def train_model(X_train, y_train, w_train, X_test, y_test, w_test, output_dir=No
     fitres = simpmodel.fit(
         X_train,
         y_train,
-        epochs=25,
+        epochs=500,
         sample_weight=w_train,
-        batch_size=512,
+        batch_size=1024,
         validation_data=(X_test, y_test, w_test),
     )
 
@@ -132,10 +132,10 @@ def main():
         return 0
 
     X, y, w, z = prepare_data()
-    folder = KFold(n_splits=3, shuffle=True, random_state=rseed)
+    folder = KFold(n_splits=2, shuffle=True, random_state=rseed)
 
     if sys.argv[1] == "train":
-        for i, (train_idx, test_idx) in enumerate(folder.split(X)):
+        for i, (test_idx, train_idx) in enumerate(folder.split(X)):
             X_train, y_train, w_train = X[train_idx], y[train_idx], w[train_idx]
             X_test, y_test, w_test = X[test_idx], y[test_idx], w[test_idx]
             train_model(

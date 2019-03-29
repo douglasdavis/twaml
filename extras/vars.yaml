@@ -1,0 +1,27 @@
+1j1b:
+  - null
+
+2j1b:
+  - null
+
+2j2b:
+  - pT_lep1
+  - pT_lep2
+  - pT_jet1
+  - pT_jet2
+  - eta_lep1
+  - eta_lep2
+  - eta_jet1
+  - eta_jet2
+  - phi_lep1
+  - phi_lep2
+  - phi_jet1
+  - phi_jet2
+  - nloosebjets
+  - nloosejets
+  - pT_jetL1
+  - psuedoContTagBin_jet1
+  - psuedoContTagBin_jet2
+
+3j:
+  - null
