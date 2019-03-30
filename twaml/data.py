@@ -833,7 +833,6 @@ class dataset:
         return breaks
 
 
-
 def scale_weight_sum(to_update: "dataset", reference: "dataset") -> None:
     """Scale the weights of the `to_update` dataset such that the sum of
     weights are equal to the sum of weights of the `reference`
