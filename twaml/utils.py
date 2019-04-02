@@ -19,12 +19,6 @@ TEXIT: dict
 """
 
 
-def get_device():
-    """helper function for getting pytorch device"""
-    import torch
-    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
 SELECTION_1j1b = "(OS == True) & (elmu == True) & (reg1j1b == True)"
 SELECTION_2j1b = "(OS == True) & (elmu == True) & (reg2j1b == True)"
 SELECTION_2j2b = "(OS == True) & (elmu == True) & (reg2j2b == True)"
