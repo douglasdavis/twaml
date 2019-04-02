@@ -56,14 +56,16 @@ def prepare_data(branchinfo_file="vars.yaml", region="2j2b"):
     return (X, y, w, z)
 
 
-def simple_model_sgd(inshape, nlayers=16, nnode=64, lr=1.0e-5, momentum=0.7):
+def simple_model_sgd(inshape, nlayers=5, nnode=64, lr=0.0005, momentum=0.8):
+    ## lr=1.0e-5, momentum=0.7
+    ## for simple variables ^^
     input_layer = Input(shape=inshape, name="Input")
     dense_layer = Dense(nnode, activation="elu", name="Dense1")(input_layer)
     for i in range(nlayers - 1):
         dense_layer = Dense(nnode, activation="elu", name=f"Dense{i+2}")(dense_layer)
     output_layer = Dense(1, activation="sigmoid", name="Output")(dense_layer)
     model = Model(inputs=[input_layer], outputs=[output_layer], name="Model")
-    opt = SGD(lr=lr, momentum=momentum)
+    opt = SGD(lr=lr, momentum=momentum, nesterov=True)
     model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
     return model
 
@@ -94,7 +96,7 @@ def train_model(
         y_train,
         epochs=epochs,
         sample_weight=w_train,
-        batch_size=1024,
+        batch_size=256,
         validation_data=(X_test, y_test, w_test),
     )
 
@@ -154,7 +156,7 @@ def main():
             y_test,
             w_test,
             output_dir=f"proofOfConcept_fold{i}",
-            epochs=1000,
+            epochs=200,
         )
 
         simpmodel, scaler = load_model_and_scaler(f"proofOfConcept_fold{i}")

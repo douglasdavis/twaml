@@ -5,6 +5,15 @@
   - null
 
 2j2b:
+  - mass_lep1jet2
+  - mass_lep1jet1
+  - deltaR_lep1_jet1
+  - mass_lep2jet1
+  - pTsys_lep1lep2met
+  - pT_jet2
+  - mass_lep2jet2
+
+2j2b_save:
   - pT_lep1
   - pT_lep2
   - pT_jet1
@@ -17,6 +26,10 @@
   - phi_lep2
   - phi_jet1
   - phi_jet2
+  - E_lep1
+  - E_lep2
+  - E_jet1
+  - E_jet2
   - nloosebjets
   - nloosejets
   - pT_jetL1
