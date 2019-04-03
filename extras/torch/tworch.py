@@ -1,8 +1,14 @@
 from twaml.data import dataset
 from twaml.data import scale_weight_sum
 from twaml.pytorch import TworchDataset
+from twaml.pytorch import SimpleNetwork
+from twaml.pytorch import device
 
 from torch.utils.data import DataLoader
+import torch.optim
+import torch.nn
+import torch.nn.functional
+import torch
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
@@ -23,7 +29,7 @@ import sys
 rseed = 414
 
 
-def prepare_raw_data(branchinfo_file="vars.yaml", region="2j2b"):
+def prepare_raw_data(branchinfo_file="../vars.yaml", region="2j2b"):
     with open(branchinfo_file, "r") as f:
         branches = yaml.load(f, Loader=yaml.FullLoader)
     branches = branches[region]
@@ -57,11 +63,43 @@ def prepare_raw_data(branchinfo_file="vars.yaml", region="2j2b"):
     return (X, y, w, z)
 
 
-def prepare_torch_data():
+
+def train(model, train_loader, opt, epoch, log_interval=200):
+    model.train()
+    for batch_idx, (X, y, w) in enumerate(train_loader):
+        opt.zero_grad()
+        output = model(X)
+        loss = torch.nn.functional.binary_cross_entropy(output, y, weight=w, reduction='none')
+        loss.backward()
+        opt.step()
+        if batch_idx % log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(X), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss.item()))
+
+
+def test(model, test_loader):
+    model.eval()
+    test_loss = 0
+    correct = 0
+    with torch.no_grad():
+        for X, y, w in test_loader:
+            output = model(X)
+            test_loss += torch.nn.functional.binary_cross_entropy(output, y, weight=w, reduction='sum').item()
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(y.long().view_as(pred)).sum().item()
+
+    test_loss /= len(test_loader.dataset)
+
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        test_loss, correct, len(test_loader.dataset),
+        100. * correct / len(test_loader.dataset)))
+
+def light_it_up():
     X_raw, y_raw, w_raw, z_raw = prepare_raw_data()
     folder = KFold(n_splits=2, shuffle=True, random_state=rseed)
 
-    for i, (test_idx, train_idx) in enumerate(folder.split(X_raw)):
+    for ifold, (test_idx, train_idx) in enumerate(folder.split(X_raw)):
         X_train, y_train, w_train = X_raw[train_idx], y_raw[train_idx], w_raw[train_idx]
         X_test, y_test, w_test = X_raw[test_idx], y_raw[test_idx], w_raw[test_idx]
 
@@ -75,15 +113,17 @@ def prepare_torch_data():
         trainLoader = DataLoader(trainDataset, batch_size=512, shuffle=True)
         testLoader = DataLoader(testDataset, batch_size=512, shuffle=True)
 
-        for batch_idx, (X, y, w) in enumerate(trainLoader):
-            if y[0] == 1:
-                print(batch_idx, X[0], y[0], w[0])
+        net = SimpleNetwork(trainDataset.n_features).to(device)
+        optimizer = torch.optim.SGD(net.parameters(), lr=0.0005, momentum=0.8)
 
-        break
+        for i in range(1, 51):
+            train(net, trainLoader, optimizer, i)
+            test(net, testLoader)
+
 
 
 def main():
-    prepare_torch_data()
+    light_it_up()
     return 0
 
 
