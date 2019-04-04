@@ -49,7 +49,6 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinxcontrib.programoutput",
-    "m2r",
 ]
 
 set_type_checking_flag = False
