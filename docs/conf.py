@@ -86,16 +86,8 @@ pygments_style = "default"
 # a list of builtin themes.
 #
 
-import sphinx_nameko_theme
-
-html_theme_path = [sphinx_nameko_theme.get_html_theme_path()]
-html_theme = 'nameko'
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-
-# sphinx_rtd_theme
-#html_theme_options = {"collapse_navigation": False}
+html_theme = "sphinx_rtd_theme"
+html_theme_options = {"collapse_navigation": False}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
