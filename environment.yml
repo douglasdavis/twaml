@@ -19,6 +19,8 @@ dependencies:
   - sphinx
   - sphinx_rtd_theme
   - pytest
+  - ipython
+  - dask
   - pip
   - pip:
     - uproot
