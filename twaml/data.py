@@ -26,9 +26,9 @@ __all__ = ["dataset", "from_root", "from_pytables", "from_h5", "scale_weight_sum
 
 class dataset:
     """A class to define a dataset with a :class:`pandas.DataFrame` as the
-    payload of the class. The class provides a set of static functions
-    to construct a dataset. The class constructor should be used only
-    in very special cases.
+    payload of the class. The ``twaml.data`` module provides a set of
+    static functions to construct a dataset. The class constructor
+    should be used only in very special cases.
 
     ``datasets`` should `always` be constructed using one of three functions:
 

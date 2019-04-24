@@ -18,7 +18,7 @@ pandas DataFrames.
 
    .. automethod:: __add__
 
-.. autofunction:: twaml.data.from_root
-.. autofunction:: twaml.data.from_pytables
-.. autofunction:: twaml.data.from_h5
+.. autofunction:: from_root
+.. autofunction:: from_pytables
+.. autofunction:: from_h5
 .. autofunction:: scale_weight_sum
