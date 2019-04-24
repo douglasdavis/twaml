@@ -1,4 +1,4 @@
-from twaml.data import dataset
+from twaml.data import from_pytables
 from twaml.data import scale_weight_sum
 from twaml.pytorch import TworchDataset
 from twaml.pytorch import SimpleNetwork
@@ -34,13 +34,13 @@ def prepare_raw_data(branchinfo_file="../vars.yaml", region="2j2b"):
         branches = yaml.load(f, Loader=yaml.FullLoader)
     branches = branches[region]
 
-    ttbar = dataset.from_pytables(
+    ttbar = from_pytables(
         f"/home/ddavis/ATLAS/data/h5s/ttbar_r{region}.h5", label=0, auxlabel=1
     )
-    tW_DR = dataset.from_pytables(
+    tW_DR = from_pytables(
         f"/home/ddavis/ATLAS/data/h5s/tW_DR_r{region}.h5", label=1, auxlabel=1
     )
-    tW_DS = dataset.from_pytables(
+    tW_DS = from_pytables(
         f"/home/ddavis/ATLAS/data/h5s/tW_DS_r{region}.h5", label=1, auxlabel=0
     )
 
