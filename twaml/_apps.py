@@ -6,6 +6,7 @@ import argparse
 from twaml.data import from_root
 import twaml.utils
 import yaml
+import pandas as pd
 
 
 def root2pytables():
@@ -94,6 +95,11 @@ def root2pytables():
         required=False,
         help="number of threads to use via ThreadPoolExecutor",
     )
+    parser.add_argument(
+        "--aggro-strip",
+        action="store_true",
+        help="call the `aggressively_strip()` function on the dataset before saving",
+    )
 
     args = parser.parse_args()
 
@@ -132,6 +138,9 @@ def root2pytables():
         selected_dses = full_ds.apply_selections(selection_yaml)
         anchor = args.out_file.split(".h5")[0]
         for sdk, sdv in selected_dses.items():
+            if args.aggro_strip:
+                with pd.option_context("mode.chained_assignment", None):
+                    sdv.aggressively_strip()
             sdv.to_pytables(f"{anchor}_{sdk}.h5")
         return 0
 
@@ -146,6 +155,7 @@ def root2pytables():
         auxweights=args.auxweights,
         detect_weights=args.detect_weights,
         nthreads=args.nthreads if args.nthreads > 1 else None,
+        aggressively_strip=args.aggro_strip,
         wtloop_meta=True,
     )
     ds.to_pytables(args.out_file)
