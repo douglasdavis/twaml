@@ -5,17 +5,19 @@ import uproot
 import h5py
 from twaml.data import dataset
 from twaml.data import scale_weight_sum
+from twaml.data import from_root, from_pytables, from_h5
 
 branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
-ds = dataset.from_root(["tests/data/test_file.root"], name="myds", branches=branches)
+ds = from_root(["tests/data/test_file.root"], name="myds", branches=branches, TeXlabel=r"$t\bar{t}$")
 
 
 def test_name():
     assert ds.name == "myds"
+    assert ds.TeXlabel == "$t\\bar{t}$"
 
 
 def test_no_name():
-    dst = dataset.from_root(["tests/data/test_file.root"], branches=branches)
+    dst = from_root(["tests/data/test_file.root"], branches=branches)
     assert dst.name == "test_file.root"
 
 
@@ -30,12 +32,12 @@ def test_content():
 
 
 def test_nothing():
-    dst = dataset.from_root(["tests/data/test_file.root"], branches=branches)
+    dst = from_root(["tests/data/test_file.root"], branches=branches)
     assert dst.files[0].exists()
 
 
 def test_with_executor():
-    lds = dataset.from_root(
+    lds = from_root(
         ["tests/data/test_file.root"], branches=branches, nthreads=4
     )
     np.testing.assert_array_almost_equal(lds.weights, ds.weights, 8)
@@ -51,7 +53,7 @@ def test_weight():
 
 
 def test_add():
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         ["tests/data/test_file.root"], name="ds2", branches=branches
     )
     ds2.weights = ds2.weights * 22
@@ -65,11 +67,10 @@ def test_add():
     assert ds.name == combined.name
     assert ds.tree_name == combined.tree_name
     assert ds.label == combined.label
-    assert ds.cols == combined.cols
 
 
 def test_selection():
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         ["tests/data/test_file.root"],
         name="ds2",
         selection="(reg2j2b==True) & (OS == True) & (pT_lep1 > 50)",
@@ -86,10 +87,10 @@ def test_selection():
 
 def test_append():
     branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
-    ds1 = dataset.from_root(
+    ds1 = from_root(
         ["tests/data/test_file.root"], name="myds", branches=branches
     )
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         ["tests/data/test_file.root"], name="ds2", branches=branches
     )
     ds2.weights = ds2.weights * 5
@@ -105,13 +106,13 @@ def test_append():
 
 def test_auxweights():
     branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
-    ds1 = dataset.from_root(
+    ds1 = from_root(
         ["tests/data/test_file.root"],
         name="myds",
         branches=branches,
         auxweights=["phi_lep1", "phi_lep2"],
     )
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         ["tests/data/test_file.root"],
         name="ds2",
         branches=branches,
@@ -119,13 +120,13 @@ def test_auxweights():
     )
     ds1.append(ds2)
 
-    dsa = dataset.from_root(
+    dsa = from_root(
         ["tests/data/test_file.root"],
         name="myds",
         branches=branches,
         auxweights=["phi_lep1", "phi_lep2"],
     )
-    dsb = dataset.from_root(
+    dsb = from_root(
         ["tests/data/test_file.root"],
         name="ds2",
         branches=branches,
@@ -150,7 +151,7 @@ def test_auxweights():
     assert "weight_nominal" in ds2.auxweights
 
     ds2.to_pytables("outfile1.h5")
-    ds2pt = dataset.from_pytables("outfile1.h5", "ds2", weight_name="phi_lep2")
+    ds2pt = from_pytables("outfile1.h5", "ds2", weight_name="phi_lep2")
     print(ds2pt.auxweights)
     np.testing.assert_array_almost_equal(
         ds2pt.auxweights["weight_nominal"].to_numpy(), nw2
@@ -160,33 +161,33 @@ def test_auxweights():
 
 
 def test_label():
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         ["tests/data/test_file.root"], name="ds2", branches=branches
     )
     assert ds2.label is None
-    assert ds2.label_asarray is None
+    assert ds2.label_asarray() is None
     ds2.label = 6
-    la = ds2.label_asarray
+    la = ds2.label_asarray()
     la_raw = np.ones_like(ds2.weights, dtype=np.int64) * 6
     np.testing.assert_array_equal(la, la_raw)
 
 
 def test_auxlabel():
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         ["tests/data/test_file.root"], name="ds2", branches=branches
     )
     assert ds2.auxlabel is None
-    assert ds2.auxlabel_asarray is None
+    assert ds2.auxlabel_asarray() is None
     ds2.auxlabel = 3
     assert ds2.auxlabel == 3
-    la = ds2.auxlabel_asarray
+    la = ds2.auxlabel_asarray()
     la_raw = np.ones_like(ds2.weights, dtype=np.int64) * 3
     np.testing.assert_array_equal(la, la_raw)
 
 
 def test_save_and_read():
     ds.to_pytables("outfile.h5")
-    new_ds = dataset.from_pytables("outfile.h5", ds.name)
+    new_ds = from_pytables("outfile.h5", ds.name)
     X1 = ds.df.to_numpy()
     X2 = new_ds.df.to_numpy()
     w1 = ds.weights
@@ -196,7 +197,7 @@ def test_save_and_read():
 
 
 def test_raw_h5():
-    inds = dataset.from_h5(
+    inds = from_h5(
         "tests/data/raw.h5", "WtLoop_nominal", ["pT_jet1", "nbjets", "met"]
     )
     rawf = h5py.File("tests/data/raw.h5")["WtLoop_nominal"]
@@ -207,10 +208,10 @@ def test_raw_h5():
 
 
 def test_scale_weight_sum():
-    ds1 = dataset.from_root(
+    ds1 = from_root(
         ["tests/data/test_file.root"], name="myds", branches=branches
     )
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         ["tests/data/test_file.root"], name="ds2", branches=branches
     )
     ds2.weights = np.random.randn(len(ds1)) * 10
@@ -225,7 +226,7 @@ def test_cleanup():
 
 
 def test_columnkeeping():
-    ds1 = dataset.from_root(
+    ds1 = from_root(
         ["tests/data/test_file.root"],
         name="myds",
         branches=["met", "sumet", "pT_jet2", "reg2j2b"],
@@ -242,7 +243,7 @@ def test_columnkeeping():
 
 
 def test_columnrming():
-    ds1 = dataset.from_root(
+    ds1 = from_root(
         ["tests/data/test_file.root"],
         name="myds",
         branches=["met", "sumet", "pT_jet2", "reg2j2b"],
@@ -259,7 +260,7 @@ def test_columnrming():
 
 
 def test_apply_selections():
-    ds2 = dataset.from_root(
+    ds2 = from_root(
         "tests/data/test_file.root",
         auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
         name="myds",

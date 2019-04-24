@@ -4,15 +4,16 @@ twaml command line applications
 
 import argparse
 from twaml.data import dataset
+from twaml.data import from_root
 import twaml.utils
 import yaml
 
 
 def root2pytables():
     """command line application which converts a set of ROOT files into a
-    pytables HDF5 file via the ``twaml.data.root_dataset`` function
-    and the ``to_pytables`` member function of the
-    ``twaml.data.dataset`` class.
+    pytables HDF5 file via the :meth:`twaml.data.from_root` function and
+    the :meth:`twaml.data.dataset.to_pytables` member function of the :class:`twaml.data.dataset`
+    class.
 
     """
     parser = argparse.ArgumentParser(
@@ -79,7 +80,7 @@ def root2pytables():
         required=False,
         help=(
             "A selection string or YAML file containing a map of selections "
-            "(see `selection` argument docs in `twaml.dataset.from_root`)"
+            "(see `selection` argument docs in `twaml.data.from_root`)"
         ),
     )
     parser.add_argument(
@@ -116,7 +117,7 @@ def root2pytables():
             with open(args.selection) as f:
                 selection_yaml = yaml.full_load(f)
 
-        full_ds = dataset.from_root(
+        full_ds = from_root(
             args.input_files,
             name=args.name,
             tree_name=args.tree_name,
@@ -135,7 +136,7 @@ def root2pytables():
         return 0
 
     ## otherwise just take the string or None
-    ds = dataset.from_root(
+    ds = from_root(
         args.input_files,
         name=args.name,
         tree_name=args.tree_name,

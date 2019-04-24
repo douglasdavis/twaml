@@ -4,11 +4,12 @@ twaml.data
 .. toctree::
    :maxdepth: 2
 
+.. currentmodule:: twaml.data
+
 The ``data`` module provides a thin wrapper around working with
 persistent ROOT files, persistent h5 files, and the use of transient
-pandas DataFrames
+pandas DataFrames.
 
-.. currentmodule:: twaml.data
 
 .. autoclass:: dataset
    :members:
@@ -17,4 +18,7 @@ pandas DataFrames
 
    .. automethod:: __add__
 
+.. autofunction:: twaml.data.from_root
+.. autofunction:: twaml.data.from_pytables
+.. autofunction:: twaml.data.from_h5
 .. autofunction:: scale_weight_sum
