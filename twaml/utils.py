@@ -22,6 +22,8 @@ TEXIT: dict
 SELECTION_1j1b = "(OS == True) & (elmu == True) & (reg1j1b == True)"
 SELECTION_2j1b = "(OS == True) & (elmu == True) & (reg2j1b == True)"
 SELECTION_2j2b = "(OS == True) & (elmu == True) & (reg2j2b == True)"
+SELECTION_3j1b = "(OS == True) & (elmu == True) & (reg3j1b == True)"
+SELECTION_3jHb = "(OS == True) & (elmu == True) & (reg3jHb == True)"
 SELECTION_3j = "(OS == True) & (elmu == True) & (reg3j == True)"
 
 TEXIT = {

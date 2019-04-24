@@ -8,7 +8,12 @@ from twaml.data import scale_weight_sum
 from twaml.data import from_root, from_pytables, from_h5
 
 branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
-ds = from_root(["tests/data/test_file.root"], name="myds", branches=branches, TeXlabel=r"$t\bar{t}$")
+ds = from_root(
+    ["tests/data/test_file.root"],
+    name="myds",
+    branches=branches,
+    TeXlabel=r"$t\bar{t}$",
+)
 
 
 def test_name():
@@ -37,9 +42,7 @@ def test_nothing():
 
 
 def test_with_executor():
-    lds = from_root(
-        ["tests/data/test_file.root"], branches=branches, nthreads=4
-    )
+    lds = from_root(["tests/data/test_file.root"], branches=branches, nthreads=4)
     np.testing.assert_array_almost_equal(lds.weights, ds.weights, 8)
 
 
@@ -53,9 +56,7 @@ def test_weight():
 
 
 def test_add():
-    ds2 = from_root(
-        ["tests/data/test_file.root"], name="ds2", branches=branches
-    )
+    ds2 = from_root(["tests/data/test_file.root"], name="ds2", branches=branches)
     ds2.weights = ds2.weights * 22
     combined = ds + ds2
     comb_w = np.concatenate([ds.weights, ds2.weights])
@@ -87,12 +88,8 @@ def test_selection():
 
 def test_append():
     branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
-    ds1 = from_root(
-        ["tests/data/test_file.root"], name="myds", branches=branches
-    )
-    ds2 = from_root(
-        ["tests/data/test_file.root"], name="ds2", branches=branches
-    )
+    ds1 = from_root(["tests/data/test_file.root"], name="myds", branches=branches)
+    ds2 = from_root(["tests/data/test_file.root"], name="ds2", branches=branches)
     ds2.weights = ds2.weights * 5
     # raw
     comb_w = np.concatenate([ds1.weights, ds2.weights])
@@ -161,9 +158,7 @@ def test_auxweights():
 
 
 def test_label():
-    ds2 = from_root(
-        ["tests/data/test_file.root"], name="ds2", branches=branches
-    )
+    ds2 = from_root(["tests/data/test_file.root"], name="ds2", branches=branches)
     assert ds2.label is None
     assert ds2.label_asarray() is None
     ds2.label = 6
@@ -173,9 +168,7 @@ def test_label():
 
 
 def test_auxlabel():
-    ds2 = from_root(
-        ["tests/data/test_file.root"], name="ds2", branches=branches
-    )
+    ds2 = from_root(["tests/data/test_file.root"], name="ds2", branches=branches)
     assert ds2.auxlabel is None
     assert ds2.auxlabel_asarray() is None
     ds2.auxlabel = 3
@@ -197,9 +190,7 @@ def test_save_and_read():
 
 
 def test_raw_h5():
-    inds = from_h5(
-        "tests/data/raw.h5", "WtLoop_nominal", ["pT_jet1", "nbjets", "met"]
-    )
+    inds = from_h5("tests/data/raw.h5", "WtLoop_nominal", ["pT_jet1", "nbjets", "met"])
     rawf = h5py.File("tests/data/raw.h5")["WtLoop_nominal"]
     raww = rawf["weight_nominal"]
     rawm = rawf["met"]
@@ -208,12 +199,8 @@ def test_raw_h5():
 
 
 def test_scale_weight_sum():
-    ds1 = from_root(
-        ["tests/data/test_file.root"], name="myds", branches=branches
-    )
-    ds2 = from_root(
-        ["tests/data/test_file.root"], name="ds2", branches=branches
-    )
+    ds1 = from_root(["tests/data/test_file.root"], name="myds", branches=branches)
+    ds2 = from_root(["tests/data/test_file.root"], name="ds2", branches=branches)
     ds2.weights = np.random.randn(len(ds1)) * 10
     scale_weight_sum(ds1, ds2)
     testval = abs(1.0 - ds2.weights.sum() / ds1.weights.sum())
@@ -250,13 +237,34 @@ def test_columnrming():
         auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
     )
 
-    ds1.rmcolumns(["met", "sumet"])
+    ds1.rm_columns(["met", "sumet"])
     list_of_cols = list(ds1.df.columns)
     assert (
         len(list_of_cols) == 2
         and "pT_jet2" in list_of_cols
         and "reg2j2b" in list_of_cols
     )
+
+    ds1 = from_root(["tests/data/test_file.root"], name="myds")
+    list_of_cols = list(ds1.df.columns)
+    assert "OS" in list_of_cols
+    assert "SS" in list_of_cols
+    assert "elmu" in list_of_cols
+    assert "elel" in list_of_cols
+    assert "mumu" in list_of_cols
+    list_of_regs = [reg for reg in list_of_cols if "reg" in reg]
+    ds1.rm_chargeflavor_columns()
+    ds1.rm_region_columns()
+    ds1.rm_weight_columns()
+    list_of_cols_after = list(ds1.df.columns)
+    assert "OS" not in list_of_cols_after
+    assert "SS" not in list_of_cols_after
+    assert "elmu" not in list_of_cols_after
+    assert "mumu" not in list_of_cols_after
+    assert "elel" not in list_of_cols_after
+    assert "reg1j1b" not in list_of_cols_after
+    for r in list_of_regs:
+        assert r not in list_of_cols_after
 
 
 def test_apply_selections():

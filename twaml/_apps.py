@@ -3,7 +3,6 @@ twaml command line applications
 """
 
 import argparse
-from twaml.data import dataset
 from twaml.data import from_root
 import twaml.utils
 import yaml
@@ -110,7 +109,8 @@ def root2pytables():
                 "r1j1b": twaml.utils.SELECTION_1j1b,
                 "r2j1b": twaml.utils.SELECTION_2j1b,
                 "r2j2b": twaml.utils.SELECTION_2j2b,
-                "r3j": twaml.utils.SELECTION_3j,
+                "r3j1b": twaml.utils.SELECTION_3j1b,
+                "r3jHb": twaml.utils.SELECTION_3jHb,
             }
 
         elif args.selection.endswith(".yml") or args.selection.endswith(".yaml"):

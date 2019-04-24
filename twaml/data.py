@@ -224,6 +224,7 @@ class dataset:
             self._auxweights = auxw
 
     def keep_columns(self, cols: List[str]) -> None:
+
         """Drop all columns not included in ``cols``
 
         Parameters
@@ -233,16 +234,50 @@ class dataset:
         """
         self._df = self._df[cols]
 
-    def keep_weights(self, weights: List[str]) -> None:
-        """Drop all columns from the aux weights frame that are not in
-        ``weights``
+    def aggressively_strip(self) -> None:
+        """Drop all columns that should never be used in a classifier.
 
-        Parameters
-        ----------
-        weights: List[str]
-          Weights to keep in the aux weights frame
+        This calls the following functions:
+
+        - :meth:`rm_meta_columns`
+        - :meth:`rm_region_columns`
+        - :meth:`rm_chargeflavor_columns`
+        - :meth:`rm_weight_columns`
         """
-        self._auxweights = self._auxweights[weights]
+        self.rm_meta_columns()
+        self.rm_region_columns()
+        self.rm_chargeflavor_columns()
+        self.rm_weight_columns()
+
+    def rm_meta_columns(self) -> None:
+        """Drop all columns are are considered meta data from the payload
+
+        This includes runNumber, eventNumber, randomRunNumber
+
+        Internally this is done by calling
+        :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload.
+        """
+        self.df.drop(
+            columns=["runNumber", "randomRunNumber", "eventNumber"], inplace=True
+        )
+
+    def rm_region_columns(self) -> None:
+        """Drop all columns that are prefixed with "reg", e.g. "reg2j2b"
+
+        Internally this is done by calling
+        :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload.
+        """
+        rmthese = [c for c in self._df.columns if re.match(r"^reg[0-9]\w+", c)]
+        self._df.drop(columns=rmthese, inplace=True)
+
+    def rm_chargeflavor_columns(self) -> None:
+        """Drop all columns that are related to charge and flavor
+
+        This would be [elmu, elel, mumu, OS, SS]
+        Internally this is done by calling
+        :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload.
+        """
+        self.df.drop(columns=["OS", "SS", "elmu", "elel", "mumu"], inplace=True)
 
     def rm_weight_columns(self) -> None:
         """Remove all payload df columns which begin with ``weight_``
@@ -256,28 +291,10 @@ class dataset:
         :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload
 
         """
-        import re
-
-        pat = re.compile("^weight_")
-        rmthese = [c for c in self._df.columns if re.match(pat, c)]
+        rmthese = [c for c in self._df.columns if re.match(r"^weight_\w+", c)]
         self._df.drop(columns=rmthese, inplace=True)
 
-    def rmcolumns_re(self, pattern: str) -> None:
-        """Remove some columns from the payload based on regex paterns
-
-        Internally this is done by calling
-        :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload
-
-        Parameters
-        ----------
-        pattern : str
-          Regex used to remove columns
-        """
-        pat = re.compile(pattern)
-        rmthese = [c for c in self._df.columns if re.search(pat, c)]
-        self._df.drop(columns=rmthese, inplace=True)
-
-    def rmcolumns(self, cols: List[str]) -> None:
+    def rm_columns(self, cols: List[str]) -> None:
         """Remove columns from the dataset
 
         Internally this is done by calling
@@ -290,6 +307,17 @@ class dataset:
 
         """
         self._df.drop(columns=cols, inplace=True)
+
+    def keep_weights(self, weights: List[str]) -> None:
+        """Drop all columns from the aux weights frame that are not in
+        ``weights``
+
+        Parameters
+        ----------
+        weights: List[str]
+          Weights to keep in the aux weights frame
+        """
+        self._auxweights = self._auxweights[weights]
 
     def change_weights(self, wname: str) -> None:
         """Change the main weight of the dataset
@@ -477,7 +505,7 @@ class dataset:
         >>> selections = { '1j1b' : '(reg1j1b == True) & (OS == True) & (elmu == True)',
         ...                '2j1b' : '(reg2j1b == True) & (OS == True) & (elmu == True)',
         ...                '2j2b' : '(reg2j2b == True) & (OS == True) & (elmu == True)',
-        ...                '3j' : '(reg3j == True) & (OS == True) & (elmu == True)'}
+        ...                '3j1b' : '(reg3j1b == True) & (OS == True) & (elmu == True)'}
         >>> selected_datasets = ds.apply_selections(selections)
 
         """
@@ -518,6 +546,7 @@ def from_root(
     label: Optional[int] = None,
     auxlabel: Optional[int] = None,
     allow_weights_in_df: bool = False,
+    aggressively_strip: bool = False,
     auxweights: Optional[List[str]] = None,
     detect_weights: bool = False,
     nthreads: Optional[int] = None,
@@ -547,7 +576,9 @@ def from_root(
     auxlabel:
         Give the dataset an integer auxiliary label
     allow_weights_in_df:
-        Allow "^weight_" branches in the payload dataframe
+        Allow "^weight_\w+" branches in the payload dataframe
+    aggressively_strip:
+        Call :meth:`twaml.data.dataset.aggressively_strip` during construction
     auxweights:
         Auxiliary weights to store in a second dataframe.
     detect_weights:
@@ -632,7 +663,7 @@ def from_root(
 
     uproot_trees = [uproot.open(file_name)[tree_name] for file_name in input_files]
 
-    wpat = re.compile("^weight_")
+    wpat = re.compile(r"^weight_\w+")
     if auxweights is not None:
         w_branches = auxweights
     elif detect_weights:
@@ -679,6 +710,9 @@ def from_root(
 
     ds._set_df_and_weights(df, weights_array, auxw=aw_df)
 
+    if aggressively_strip:
+        ds.aggressively_strip()
+
     return ds
 
 
@@ -721,7 +755,9 @@ def from_pytables(
     Examples
     --------
 
-    >>> ds1 = dataset.from_pytables("ttbar.h5", "ttbar")
+    Creating a dataset from pytables where everything is auto detected:
+
+    >>> ds1 = dataset.from_pytables("ttbar.h5")
     >>> ds1.label = 1 ## add label dataset after the fact
 
     """
@@ -796,7 +832,7 @@ def from_h5(
         Names of columns (branches) to include in payload
     tree_name:
         Name of tree dataset originates from (HDF5 dataset name)
-    weight_name: str
+    weight_name:
         Name of the weight array inside the h5 file
     label:
         Give the dataset an integer label
@@ -808,7 +844,8 @@ def from_h5(
     Examples
     --------
 
-    >>> ds = dataset.from_h5('file.h5', 'dsname', tree_name='WtLoop_EG_RESOLUTION_ALL__1up')
+    >>> ds = dataset.from_h5("file.h5", "dsname", TeXlabel=r"$tW$",
+    ...                      tree_name="WtLoop_EG_RESOLUTION_ALL__1up")
 
     """
     ds = dataset()

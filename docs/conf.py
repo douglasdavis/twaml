@@ -26,10 +26,11 @@ copyright = "2019, Doug Davis"
 author = "Doug Davis"
 
 # The short X.Y version
-version = ".".join(twaml.version.version.split(".")[:3])
+#version = ".".join(twaml.version.version.split(".")[:3])
+version = twaml.__version__
 
 # The full version, including alpha/beta/rc tags
-release = twaml.version.version
+release = twaml.__version__
 
 # -- General configuration ---------------------------------------------------
 
