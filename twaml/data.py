@@ -257,9 +257,7 @@ class dataset:
         Internally this is done by calling
         :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload.
         """
-        self.df.drop(
-            columns=["runNumber", "randomRunNumber", "eventNumber"], inplace=True
-        )
+        self.df.drop(columns=["runNumber", "randomRunNumber", "eventNumber"], inplace=True)
 
     def rm_region_columns(self) -> None:
         """Drop all columns that are prefixed with "reg", e.g. "reg2j2b"
@@ -653,12 +651,10 @@ def from_root(
 
     if wtloop_meta:
         meta_trees = {
-            file_name: uproot.open(file_name)["WtLoop_meta"]
-            for file_name in input_files
+            file_name: uproot.open(file_name)["WtLoop_meta"] for file_name in input_files
         }
         ds.wtloop_metas = {
-            fn: yaml.full_load(mt.array("meta_yaml")[0])
-            for fn, mt in meta_trees.items()
+            fn: yaml.full_load(mt.array("meta_yaml")[0]) for fn, mt in meta_trees.items()
         }
 
     uproot_trees = [uproot.open(file_name)[tree_name] for file_name in input_files]

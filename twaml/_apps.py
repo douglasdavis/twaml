@@ -24,12 +24,7 @@ def root2pytables():
         )
     )
     parser.add_argument(
-        "-i",
-        "--input-files",
-        type=str,
-        nargs="+",
-        required=True,
-        help="input ROOT files",
+        "-i", "--input-files", type=str, nargs="+", required=True, help="input ROOT files"
     )
     parser.add_argument(
         "-n",
@@ -54,11 +49,7 @@ def root2pytables():
         help="branches to save (defaults to all)",
     )
     parser.add_argument(
-        "--tree-name",
-        type=str,
-        required=False,
-        default="WtLoop_nominal",
-        help="tree name",
+        "--tree-name", type=str, required=False, default="WtLoop_nominal", help="tree name"
     )
     parser.add_argument(
         "--weight-name",
