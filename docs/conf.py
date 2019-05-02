@@ -50,6 +50,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinxcontrib.programoutput",
+    "autodocsumm",
 ]
 
 set_type_checking_flag = False

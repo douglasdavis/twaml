@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-"""twaml.data module
-
-This module contains a classe to abstract datasets using
-pandas.DataFrames as the payload for feeding to machine learning
-frameworks and other general data investigating
+"""This module contains a class (and functions to load it) which
+abstracts datasets using ``pandas.DataFrames`` as the payload for
+feeding to machine learning frameworks and other general data
+investigating.
 
 """
 
@@ -38,32 +37,21 @@ class dataset:
 
     Attributes
     ----------
-    files: List[PosixPath]
-      List of files delivering the dataset
     name: str
       Name for the dataset
-    TeXlabel: Optional[str]
-      LaTeX formatted name (for plot labels)
+    weight_name: str
+      Name of the branch which the weight array originates from
     tree_name: str
       All of our datasets had to come from a ROOT tree at some point
-    weights: :class:`numpy.ndarray`
-      The array of event weights
-    df: :class:`pandas.DataFrame`
-      The payload of the class, a dataframe
-    auxweights: Optional[pandas.DataFrame]
-      Auxiliary weights to have access too
+    selection_formula: Optional[str]
+      A string (in :meth:`pandas.DataFrame.eval` form) that all of data in
+      the dataset had to satisfy
     label: Optional[int]
       Optional dataset label (as an int)
     auxlabel: Optional[int]
       Optional auxiliary label (as an int) - sometimes we need two labels
-    shape: Tuple
-      Shape of the main payload dataframe
-    wtloop_metas: Optional[Dict[str, Dict]]
-      A dictionary of files to meta dictionaries
-    selection_formula: Optional[str]
-      A string (in :meth:`pandas.DataFrame.eval` form) that all of data in
-      the dataset had to satisfy
-
+    TeXlabel: Optional[str]
+      LaTeX formatted name (for plot labels)
     """
 
     name = None
@@ -133,12 +121,14 @@ class dataset:
             return None
 
     def has_payload(self) -> bool:
+        """check if dataframe and weights are non empty"""
         has_df = not self._df.empty
         has_weights = self._weights.shape[0] > 0
         return has_df and has_weights
 
     @property
     def files(self) -> List[PosixPath]:
+        """list of files which make up the dataset"""
         return self._files
 
     @files.setter
@@ -147,6 +137,7 @@ class dataset:
 
     @property
     def df(self) -> pd.DataFrame:
+        """the payload of the dataset class"""
         return self._df
 
     @df.setter
@@ -156,6 +147,7 @@ class dataset:
 
     @property
     def weights(self) -> np.ndarray:
+        """array of event weights"""
         return self._weights
 
     @weights.setter
@@ -165,6 +157,7 @@ class dataset:
 
     @property
     def auxweights(self) -> pd.DataFrame:
+        """dataframe of auxiliary event weights"""
         return self._auxweights
 
     @auxweights.setter
@@ -175,6 +168,7 @@ class dataset:
 
     @property
     def shape(self) -> Tuple:
+        """shape of dataset (n events, n features)"""
         return self.df.shape
 
     @shape.setter
@@ -183,11 +177,51 @@ class dataset:
 
     @property
     def wtloop_metas(self) -> Optional[Dict[str, Dict]]:
+        """dictionary of metadata information (one for each file making up the dataset)"""
         return self._wtloop_metas
 
     @wtloop_metas.setter
     def wtloop_metas(self, new) -> None:
         self._wtloop_metas = new
+
+    @property
+    def initial_state(self) -> str:
+        """retrieve initial state from the wtloop_metas information (if available)
+
+        This will return 'unknown' if wtloop_metas information is
+        unavailable, or a set if multiple different initial states are
+        found.
+        """
+        if self.wtloop_metas is None:
+            return 'unknown'
+
+        init_states = set()
+        for k, v in self.wtloop_metas.items():
+            init_states.add(v['initial_state'])
+        if len(init_states) == 1:
+            for elem in init_states:
+                return elem
+        else:
+            return init_states
+
+    @property
+    def dsid(self) -> int:
+        """retrieve the DSID from the wtloop_metas information (if available)
+
+        This will return 999999 if wtloop_metas information is
+        unavailable, or a set if multiple different DSIDs are found.
+        """
+        if self.wtloop_metas is None:
+            return 999999
+
+        dsids = set()
+        for k, v in self.wtloop_metas.items():
+            dsids.add(v['dsid'])
+        if len(dsids) == 1:
+            for elem in dsids:
+                return elem
+        else:
+            return dsids
 
     def label_asarray(self) -> Optional[np.ndarray]:
         """retrieve a homogenuous array of labels (or ``None``) if no label"""
@@ -260,7 +294,7 @@ class dataset:
         self.df.drop(columns=["runNumber", "randomRunNumber", "eventNumber"], inplace=True)
 
     def rm_region_columns(self) -> None:
-        """Drop all columns that are prefixed with "reg", e.g. "reg2j2b"
+        """Drop all columns that are prefixed with ``reg``, like ``reg2j2b``
 
         Internally this is done by calling
         :meth:`pandas.DataFrame.drop` with ``inplace`` on the payload.
@@ -307,8 +341,7 @@ class dataset:
         self._df.drop(columns=cols, inplace=True)
 
     def keep_weights(self, weights: List[str]) -> None:
-        """Drop all columns from the aux weights frame that are not in
-        ``weights``
+        """Drop all columns from the aux weights frame that are not in ``weights``
 
         Parameters
         ----------
@@ -380,11 +413,12 @@ class dataset:
             self._auxweights = None
 
     def to_pytables(self, file_name: str) -> None:
-        """Write dataset to disk as a pytables h5 file (with a strict
-        twaml-compatible naming scheme)
+        """Write dataset to disk as a pytables h5 file
 
-        An existing dataset label **is not stored**. The properties of
-        the class that are serialized to disk:
+        This method saves a file using a strict twaml-compatible
+        naming scheme. An existing dataset label **is not
+        stored**. The properties of the class that are serialized to
+        disk (and the associated key for each item):
 
         - ``df`` as ``{name}_payload``
         - ``weights`` as ``{name}_{weight_name}``
@@ -722,7 +756,7 @@ def from_pytables(
     TeXlabel: Optional[str] = None,
 ) -> "dataset":
     """Initialize a dataset from pytables output generated from
-    dataset.to_pytables
+    :meth:`dataset.to_pytables`
 
     The payload is extracted from the .h5 pytables files using the
     name of the dataset and the weight name. If the name of the

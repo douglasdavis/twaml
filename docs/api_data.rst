@@ -6,13 +6,37 @@ twaml.data
 
 .. currentmodule:: twaml.data
 
-The ``data`` module provides a thin wrapper around working with
-persistent ROOT files, persistent h5 files, and the use of transient
-pandas DataFrames.
+.. automodule:: twaml.data
 
+Classes
+-------
+
+.. autosummary::
+
+   dataset
+
+Creation Functions
+------------------
+
+.. autosummary::
+
+   from_root
+   from_pytables
+   from_h5
+
+Utility Free Functions
+----------------------
+
+.. autosummary::
+
+   scale_weight_sum
+
+Details
+-------
 
 .. autoclass:: dataset
    :members:
+   :autosummary:
    :show-inheritance:
    :inherited-members:
 
