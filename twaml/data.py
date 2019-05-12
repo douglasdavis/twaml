@@ -193,11 +193,11 @@ class dataset:
         found.
         """
         if self.wtloop_metas is None:
-            return 'unknown'
+            return "unknown"
 
         init_states = set()
         for k, v in self.wtloop_metas.items():
-            init_states.add(v['initial_state'])
+            init_states.add(v["initial_state"])
         if len(init_states) == 1:
             for elem in init_states:
                 return elem
@@ -216,7 +216,7 @@ class dataset:
 
         dsids = set()
         for k, v in self.wtloop_metas.items():
-            dsids.add(v['dsid'])
+            dsids.add(v["dsid"])
         if len(dsids) == 1:
             for elem in dsids:
                 return elem
@@ -542,8 +542,8 @@ class dataset:
 
         """
         breaks = {}
-        for selk, selv in selections.items():
-            mask = self.df.eval(selv)
+        for sel_key, sel_val in selections.items():
+            mask = self.df.eval(sel_val)
             new_df = self.df[mask]
             new_weights = self.weights[mask]
             new_auxweights = None
@@ -562,8 +562,8 @@ class dataset:
             )
             new_ds._set_df_and_weights(new_df, new_weights, new_auxweights)
             new_ds.wtloop_metas = new_meta
-            new_ds.selection_formula = selv
-            breaks[selk] = new_ds
+            new_ds.selection_formula = sel_val
+            breaks[sel_key] = new_ds
 
         return breaks
 
