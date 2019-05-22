@@ -1,22 +1,20 @@
-# -*- coding: utf-8 -*-
-
-"""This module contains a class (and functions to load it) which
+"""
+This module contains a class (and functions to load it) which
 abstracts datasets using ``pandas.DataFrames`` as the payload for
 feeding to machine learning frameworks and other general data
 investigating.
-
 """
 
+import re
+from pathlib import PosixPath
+from typing import List, Tuple, Optional, Union, Dict, Any
+from concurrent.futures import ThreadPoolExecutor
+import logging
 import uproot
 import pandas as pd
 import h5py
 import numpy as np
-import re
 import yaml
-from pathlib import PosixPath
-from typing import List, Tuple, Optional, Union, Dict
-from concurrent.futures import ThreadPoolExecutor
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -113,12 +111,11 @@ class dataset:
     def _combine_wtloop_metas(meta1, meta2) -> Optional[dict]:
         if meta1 is not None and meta2 is not None:
             return {**meta1, **meta2}
-        elif meta1 is None and meta2 is not None:
+        if meta1 is None and meta2 is not None:
             return {**meta2}
-        elif meta1 is not None and meta2 is None:
+        if meta1 is not None and meta2 is None:
             return {**meta1}
-        else:
-            return None
+        return None
 
     def has_payload(self) -> bool:
         """check if dataframe and weights are non empty"""
@@ -196,7 +193,7 @@ class dataset:
             return "unknown"
 
         init_states = set()
-        for k, v in self.wtloop_metas.items():
+        for _, v in self.wtloop_metas.items():
             init_states.add(v["initial_state"])
         if len(init_states) == 1:
             for elem in init_states:
@@ -215,7 +212,7 @@ class dataset:
             return 999999
 
         dsids = set()
-        for k, v in self.wtloop_metas.items():
+        for _, v in self.wtloop_metas.items():
             dsids.add(v["dsid"])
         if len(dsids) == 1:
             for elem in dsids:
@@ -258,8 +255,8 @@ class dataset:
             self._auxweights = auxw
 
     def keep_columns(self, cols: List[str]) -> None:
-
-        """Drop all columns not included in ``cols``
+        """
+        Drop all columns not included in ``cols``
 
         Parameters
         ----------
@@ -375,7 +372,6 @@ class dataset:
         self._auxweights.drop(columns=[wname], inplace=True)
 
     def append(self, other: "dataset") -> None:
-
         """Append a dataset to an exiting one
 
         We perform concatenations of the dataframes and weights to
@@ -412,7 +408,7 @@ class dataset:
         else:
             self._auxweights = None
 
-    def to_pytables(self, file_name: str) -> None:
+    def to_pytables(self, file_name: str, to_hdf_kw: Optional[Dict[str, Any]] = None) -> None:
         """Write dataset to disk as a pytables h5 file
 
         This method saves a file using a strict twaml-compatible
@@ -438,6 +434,8 @@ class dataset:
         ----------
         file_name:
           output file name,
+        format:
+          dict of keyword arguments fed to :meth:`pd.DataFrame.to_hdf`
 
         Examples
         --------
@@ -450,17 +448,17 @@ class dataset:
         'myds'
 
         """
-
+        if to_hdf_kw is None:
+            to_hdf_kw = {}
         log.info(f"Creating pytables dataset with name '{self.name}' in {file_name}")
         log.info(f"  selection used: '{self.selection_formula}'")
         log.info(f"  according to the dataset class the original source was:")
-        for f in self.files:
-            log.info(f"   - {f}")
-
+        for fname in self.files:
+            log.info(f"   - {fname}")
         if PosixPath(file_name).exists():
             log.warning(f"{file_name} exists, overwriting")
         weights_frame = pd.DataFrame(dict(weights=self._weights))
-        self._df.to_hdf(file_name, f"{self.name}_payload", mode="w")
+        self._df.to_hdf(file_name, f"{self.name}_payload", mode="w", **to_hdf_kw)
         weights_frame.to_hdf(file_name, f"{self.name}_{self.weight_name}", mode="a")
         if self._auxweights is not None:
             self._auxweights.to_hdf(file_name, f"{self.name}_auxweights", mode="a")
@@ -585,7 +583,8 @@ def from_root(
     wtloop_meta: bool = False,
     TeXlabel: Optional[str] = None,
 ) -> "dataset":
-    """Initialize a dataset from ROOT files
+    """
+    Initialize a dataset from ROOT files
 
     Parameters
     ----------
@@ -608,7 +607,7 @@ def from_root(
     auxlabel:
         Give the dataset an integer auxiliary label
     allow_weights_in_df:
-        Allow "^weight_\w+" branches in the payload dataframe
+        Allow "^weight_\\w+" branches in the payload dataframe
     aggressively_strip:
         Call :meth:`twaml.data.dataset.aggressively_strip` during construction
     auxweights:
@@ -727,9 +726,7 @@ def from_root(
         frame_list.append(raw_f)
         if w_branches is not None:
             aux_frame_list.append(raw_aw)
-            assert len(raw_w) == len(
-                raw_aw
-            ), "aux weight length and weight length different"
+            assert len(raw_w) == len(raw_aw), "aux weight length and weight length different"
 
     weights_array = np.concatenate(weight_list)
     df = pd.concat(frame_list)

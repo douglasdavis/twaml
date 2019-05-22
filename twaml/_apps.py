@@ -23,79 +23,42 @@ def root2pytables():
             "twaml.data.dataset.to_pytables"
         )
     )
-    parser.add_argument(
-        "-i", "--input-files", type=str, nargs="+", required=True, help="input ROOT files"
-    )
-    parser.add_argument(
-        "-n",
-        "--name",
-        type=str,
-        required=True,
-        help="dataset name (required when reading back into twaml.data.dataset)",
-    )
-    parser.add_argument(
-        "-o",
-        "--out-file",
-        type=str,
-        required=True,
-        help="Output h5 file (existing file will be overwritten)",
-    )
-    parser.add_argument(
-        "-b",
-        "--branches",
-        type=str,
-        nargs="+",
-        required=False,
-        help="branches to save (defaults to all)",
-    )
-    parser.add_argument(
-        "--tree-name", type=str, required=False, default="WtLoop_nominal", help="tree name"
-    )
-    parser.add_argument(
-        "--weight-name",
-        type=str,
-        required=False,
-        default="weight_nominal",
-        help="weight branch name",
-    )
-    parser.add_argument(
-        "--auxweights",
-        type=str,
-        nargs="+",
-        required=False,
-        help="extra auxiliary weights to save",
-    )
-    parser.add_argument(
-        "--selection",
-        type=str,
-        required=False,
-        help=(
-            "A selection string or YAML file containing a map of selections "
-            "(see `selection` argument docs in `twaml.data.from_root`)"
-        ),
-    )
-    parser.add_argument(
-        "--detect-weights",
-        action="store_true",
-        help="detect weights in the dataset, --auxweights overrides this",
-    )
-    parser.add_argument(
-        "--nthreads",
-        type=int,
-        default=1,
-        required=False,
-        help="number of threads to use via ThreadPoolExecutor",
-    )
-    parser.add_argument(
-        "--aggro-strip",
-        action="store_true",
-        help="call the `aggressively_strip()` function on the dataset before saving",
-    )
+
+    # fmt: off
+    parser.add_argument("-i", "--input-files", type=str, nargs="+", required=True, help="input ROOT files")
+    parser.add_argument("-n", "--name", type=str, required=True,
+                        help="dataset name (required when reading back into twaml.data.dataset)")
+    parser.add_argument("-o", "--out-file", type=str, required=True,
+                        help="Output h5 file (existing file will be overwritten)")
+    parser.add_argument("-b", "--branches", type=str, nargs="+", required=False,
+                        help="branches to save (defaults to all)")
+    parser.add_argument("--tree-name", type=str, required=False, default="WtLoop_nominal", help="tree name")
+    parser.add_argument("--weight-name", type=str, required=False, default="weight_nominal", help="weight branch name")
+    parser.add_argument("--auxweights", type=str, nargs="+", required=False, help="extra auxiliary weights to save")
+    parser.add_argument("--selection", type=str, required=False,
+                        help=("A selection string or YAML file containing a map of selections "
+                              "(see `selection` argument docs in `twaml.data.from_root`)"))
+    parser.add_argument("--detect-weights", action="store_true",
+                        help="detect weights in the dataset, --auxweights overrides this")
+    parser.add_argument("--nthreads", type=int, default=1, required=False,
+                        help="number of threads to use via ThreadPoolExecutor")
+    parser.add_argument("--aggro-strip", action="store_true",
+                        help="call the `aggressively_strip()` function on the dataset before saving")
+    parser.add_argument("--table-format", action="store_true",
+                        help="Use the 'table' format keyword when calling DataFrame's to_hdf function")
+    parser.add_argument("--use-lz4", action="store_true", help="Use lz4 compression")
+    # fmt: on
 
     args = parser.parse_args()
 
     if not args.out_file.endswith(".h5"):
         raise ValueError("--out-file argument must end in .h5")
+
+    to_hdf_kw = {}
+    if args.table_format:
+        to_hdf_kw["format"] = "table"
+    if args.use_lz4:
+        to_hdf_kw["complib"] = "blosc:lz4"
 
     ## if selection is not none and is a file ending in .yml or .yaml
     ## we do the yaml based selections. also a shortcut is implemented
@@ -132,7 +95,7 @@ def root2pytables():
             if args.aggro_strip:
                 with pd.option_context("mode.chained_assignment", None):
                     sdv.aggressively_strip()
-            sdv.to_pytables(f"{anchor}_{sdk}.h5")
+            sdv.to_pytables(f"{anchor}_{sdk}.h5", to_hdf_kw=to_hdf_hw)
         return 0
 
     ## otherwise just take the string or None
@@ -149,6 +112,6 @@ def root2pytables():
         aggressively_strip=args.aggro_strip,
         wtloop_meta=True,
     )
-    ds.to_pytables(args.out_file)
+    ds.to_pytables(args.out_file, to_hdf_kw=to_hdf_kw)
 
     return 0
