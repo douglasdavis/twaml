@@ -89,13 +89,14 @@ def root2pytables():
             wtloop_meta=True,
         )
 
-        selected_dses = full_ds.apply_selections(selection_yaml)
+        selected_masks = full_ds.selection_masks(selection_yaml)
         anchor = args.out_file.split(".h5")[0]
-        for sdk, sdv in selected_dses.items():
+        for sdk, sdv in selected_masks.items():
+            temp_ds = full_ds[sdv]
             if args.aggro_strip:
-                with pd.option_context("mode.chained_assignment", None):
-                    sdv.aggressively_strip()
-            sdv.to_pytables(f"{anchor}_{sdk}.h5", to_hdf_kw=to_hdf_hw)
+                temp_ds.aggressively_strip()
+            temp_ds.to_pytables(f"{anchor}_{sdk}.h5", to_hdf_kw=to_hdf_kw)
+            del temp_ds
         return 0
 
     ## otherwise just take the string or None

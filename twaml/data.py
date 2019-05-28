@@ -107,16 +107,6 @@ class dataset:
         self.auxlabel = auxlabel
         self.TeXlabel = TeXlabel
 
-    @staticmethod
-    def _combine_wtloop_metas(meta1, meta2) -> Optional[dict]:
-        if meta1 is not None and meta2 is not None:
-            return {**meta1, **meta2}
-        if meta1 is None and meta2 is not None:
-            return {**meta2}
-        if meta1 is not None and meta2 is None:
-            return {**meta1}
-        return None
-
     def has_payload(self) -> bool:
         """check if dataframe and weights are non empty"""
         has_df = not self._df.empty
@@ -244,6 +234,28 @@ class dataset:
         """standard str"""
         return f"dataset(name={self.name})"
 
+    def __getitem__(self, idx) -> "dataset":
+        """get subset based on boolean mask or array of indices"""
+        new_df = self._df[idx]
+        new_w = self._weights[idx]
+        if self._auxweights is not None:
+            new_aw = self._auxweights[idx]
+        else:
+            new_aw = None
+        new_ds = dataset()
+        new_ds._init_skeleton(
+            self.files,
+            self.name,
+            weight_name=self.weight_name,
+            tree_name=self.tree_name,
+            label=self.label,
+            auxlabel=self.auxlabel,
+            TeXlabel=self.TeXlabel,
+        )
+        new_ds.wtloop_metas = self.wtloop_metas
+        new_ds._set_df_and_weights(new_df, new_w, auxw=new_aw)
+        return new_ds
+
     def _set_df_and_weights(
         self, df: pd.DataFrame, w: np.ndarray, auxw: Optional[pd.DataFrame] = None
     ) -> None:
@@ -253,6 +265,16 @@ class dataset:
         if auxw is not None:
             assert len(df) == len(auxw), "unequal length df and auxw weights"
             self._auxweights = auxw
+
+    @staticmethod
+    def _combine_wtloop_metas(meta1, meta2) -> Optional[dict]:
+        if meta1 is not None and meta2 is not None:
+            return {**meta1, **meta2}
+        if meta1 is None and meta2 is not None:
+            return {**meta2}
+        if meta1 is not None and meta2 is None:
+            return {**meta1}
+        return None
 
     def keep_columns(self, cols: List[str]) -> None:
         """
@@ -511,6 +533,26 @@ class dataset:
 
         new_ds._set_df_and_weights(new_df, new_weights, auxw=new_aw)
         return new_ds
+
+    def selection_masks(self, selections: Dict[str, str]) -> Dict[str, np.ndarray]:
+        """Based on a dictionary of selections, calculate masks (boolean
+        ararys) for each selection
+
+        Parameters
+        ----------
+        selections:
+          Dictionary of selections in the form ``{ name : selection }``.
+
+        Returns
+        -------
+        Dict[str, dataset]
+          A dictionary of ``{ selection name : bool array }`` satisfying the selections
+
+        """
+        masks = {}
+        for sel_key, sel_val in selections.items():
+            masks[sel_key] = np.asarray(self.df.eval(sel_val))
+        return masks
 
     def apply_selections(self, selections: Dict[str, str]) -> Dict[str, "dataset"]:
         """Based on a dictionary of selections, break the dataset into a set
