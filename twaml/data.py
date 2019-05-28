@@ -534,7 +534,7 @@ class dataset:
         new_ds._set_df_and_weights(new_df, new_weights, auxw=new_aw)
         return new_ds
 
-    def selection_masks(self, selections: Dict[str, str]) -> Dict[str, np.ndarray]:
+    def selection_masks(self, selections: Dict[str, str]) -> Dict[str, "np.ndarray"]:
         """Based on a dictionary of selections, calculate masks (boolean
         ararys) for each selection
 
