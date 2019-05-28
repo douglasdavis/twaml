@@ -267,14 +267,14 @@ def test_columnrming():
         assert r not in list_of_cols_after
 
 
-def test_apply_selections():
+def test_selected_datasets():
     ds2 = from_root(
         "tests/data/test_file.root",
         auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
         name="myds",
     )
 
-    splits = ds2.apply_selections(
+    splits = ds2.selected_datasets(
         {"s1": "(pT_lep2 > 30) & (pT_jet1 < 50)", "s2": "(reg2j1b==True)"}
     )
 

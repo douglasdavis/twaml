@@ -163,7 +163,7 @@ class dataset:
         raise NotImplementedError("Cannot set shape manually")
 
     @property
-    def wtloop_metas(self) -> Optional[Dict[str, Dict]]:
+    def wtloop_metas(self) -> Optional[Dict[str, Dict[str, Any]]]:
         """dictionary of metadata information (one for each file making up the dataset)"""
         return self._wtloop_metas
 
@@ -543,30 +543,26 @@ class dataset:
         selections:
           Dictionary of selections in the form ``{ name : selection }``.
 
-        Returns
-        -------
-        Dict[str, dataset]
-          A dictionary of ``{ selection name : bool array }`` satisfying the selections
-
         """
         masks = {}
         for sel_key, sel_val in selections.items():
             masks[sel_key] = np.asarray(self.df.eval(sel_val))
         return masks
 
-    def apply_selections(self, selections: Dict[str, str]) -> Dict[str, "dataset"]:
+    def selected_datasets(self, selections: Dict[str, str]) -> Dict[str, "dataset"]:
         """Based on a dictionary of selections, break the dataset into a set
         of multiple (finer grained) datasets.
+
+        Warnings
+        --------
+        For large datasets this can get memory intensive quickly. A
+        good alternative is :meth:`selection_masks` combined with the
+        ``__getitem__`` implementation.
 
         Parameters
         ----------
         selections:
           Dictionary of selections in the form ``{ name : selection }``.
-
-        Returns
-        -------
-        Dict[str, dataset]
-          A dictionary of datasets satisfying the selections
 
         Examples
         --------
@@ -578,7 +574,7 @@ class dataset:
         ...                '2j1b' : '(reg2j1b == True) & (OS == True) & (elmu == True)',
         ...                '2j2b' : '(reg2j2b == True) & (OS == True) & (elmu == True)',
         ...                '3j1b' : '(reg3j1b == True) & (OS == True) & (elmu == True)'}
-        >>> selected_datasets = ds.apply_selections(selections)
+        >>> selected_datasets = ds.selected_datasets(selections)
 
         """
         breaks = {}
