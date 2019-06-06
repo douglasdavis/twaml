@@ -474,7 +474,7 @@ class dataset:
             to_hdf_kw = {}
         log.info(f"Creating pytables dataset with name '{self.name}' in {file_name}")
         log.info(f"  selection used: '{self.selection_formula}'")
-        log.info(f"  according to the dataset class the original source was:")
+        log.info(f"  original source was:")
         for fname in self.files:
             log.info(f"   - {fname}")
         if PosixPath(file_name).exists():
@@ -534,7 +534,9 @@ class dataset:
         new_ds._set_df_and_weights(new_df, new_weights, auxw=new_aw)
         return new_ds
 
-    def selection_masks(self, selections: Dict[str, str]) -> Dict[str, "np.ndarray"]:
+    def selection_masks(
+        self, selections: Dict[str, str]
+    ) -> Tuple[Dict[str, "np.ndarray"], Tuple[str]]:
         """Based on a dictionary of selections, calculate masks (boolean
         ararys) for each selection
 
@@ -545,9 +547,11 @@ class dataset:
 
         """
         masks = {}
+        selstrs = []
         for sel_key, sel_val in selections.items():
             masks[sel_key] = np.asarray(self.df.eval(sel_val))
-        return masks
+            selstrs.append(sel_val)
+        return masks, tuple(selstrs)
 
     def selected_datasets(self, selections: Dict[str, str]) -> Dict[str, "dataset"]:
         """Based on a dictionary of selections, break the dataset into a set

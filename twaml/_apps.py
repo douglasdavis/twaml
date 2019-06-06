@@ -89,12 +89,13 @@ def root2pytables():
             wtloop_meta=True,
         )
 
-        selected_masks = full_ds.selection_masks(selection_yaml)
+        selected_masks, sel_logics = full_ds.selection_masks(selection_yaml)
         anchor = args.out_file.split(".h5")[0]
-        for sdk, sdv in selected_masks.items():
+        for (sdk, sdv), sdl in zip(selected_masks.items(), sel_logics):
             temp_ds = full_ds[sdv]
             if args.aggro_strip:
                 temp_ds.aggressively_strip()
+            temp_ds.selection_formula = sdl
             temp_ds.to_pytables(f"{anchor}_{sdk}.h5", to_hdf_kw=to_hdf_kw)
             del temp_ds
         return 0

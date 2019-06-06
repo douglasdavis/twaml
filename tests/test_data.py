@@ -9,10 +9,7 @@ from twaml.data import from_root, from_pytables, from_h5
 
 branches = ["pT_lep1", "pT_lep2", "eta_lep1", "eta_lep2"]
 ds = from_root(
-    ["tests/data/test_file.root"],
-    name="myds",
-    branches=branches,
-    TeXlabel=r"$t\bar{t}$",
+    ["tests/data/test_file.root"], name="myds", branches=branches, TeXlabel=r"$t\bar{t}$"
 )
 
 
@@ -62,9 +59,7 @@ def test_add():
     comb_w = np.concatenate([ds.weights, ds2.weights])
     comb_df = pd.concat([ds.df, ds2.df])
     np.testing.assert_array_almost_equal(comb_w, combined.weights, 5)
-    np.testing.assert_array_almost_equal(
-        comb_df.get_values(), combined.df.get_values(), 5
-    )
+    np.testing.assert_array_almost_equal(comb_df.get_values(), combined.df.get_values(), 5)
     assert ds.name == combined.name
     assert ds.tree_name == combined.tree_name
     assert ds.label == combined.label
@@ -139,9 +134,7 @@ def test_auxweights():
     assert dsc.weight_name == "phi_lep2"
 
     pl2 = uproot.open("tests/data/test_file.root")["WtLoop_nominal"].array("phi_lep2")
-    nw2 = uproot.open("tests/data/test_file.root")["WtLoop_nominal"].array(
-        "weight_nominal"
-    )
+    nw2 = uproot.open("tests/data/test_file.root")["WtLoop_nominal"].array("weight_nominal")
     ds2.change_weights("phi_lep2")
     np.testing.assert_array_almost_equal(ds2.weights, pl2, 5)
     assert "phi_lep2" not in ds2.auxweights
@@ -150,9 +143,7 @@ def test_auxweights():
     ds2.to_pytables("outfile1.h5")
     ds2pt = from_pytables("outfile1.h5", "ds2", weight_name="phi_lep2")
     print(ds2pt.auxweights)
-    np.testing.assert_array_almost_equal(
-        ds2pt.auxweights["weight_nominal"].to_numpy(), nw2
-    )
+    np.testing.assert_array_almost_equal(ds2pt.auxweights["weight_nominal"].to_numpy(), nw2)
     os.remove("outfile1.h5")
     assert True
 
@@ -239,11 +230,7 @@ def test_columnrming():
 
     ds1.rm_columns(["met", "sumet"])
     list_of_cols = list(ds1.df.columns)
-    assert (
-        len(list_of_cols) == 2
-        and "pT_jet2" in list_of_cols
-        and "reg2j2b" in list_of_cols
-    )
+    assert len(list_of_cols) == 2 and "pT_jet2" in list_of_cols and "reg2j2b" in list_of_cols
 
     ds1 = from_root(["tests/data/test_file.root"], name="myds")
     list_of_cols = list(ds1.df.columns)
@@ -269,9 +256,7 @@ def test_columnrming():
 
 def test_selected_datasets():
     ds2 = from_root(
-        "tests/data/test_file.root",
-        auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
-        name="myds",
+        "tests/data/test_file.root", auxweights=["pT_lep1", "pT_lep2", "pT_jet1"], name="myds"
     )
 
     splits = ds2.selected_datasets(
@@ -286,6 +271,33 @@ def test_selected_datasets():
     pT_lep1 = t.array("pT_lep1")
     s1_pT_lep1 = splits["s1"].df.pT_lep1.to_numpy()
     s2_pT_lep1 = splits["s2"].df.pT_lep1.to_numpy()
+
+    pT_lep1_manual_s1 = pT_lep1[pT_lep2_g30 & pT_jet1_l50]
+    pT_lep1_manual_s2 = pT_lep1[reg2j1b_ist]
+
+    np.testing.assert_allclose(s1_pT_lep1, pT_lep1_manual_s1)
+    np.testing.assert_allclose(s2_pT_lep1, pT_lep1_manual_s2)
+
+
+def test_selection_masks():
+    ds2 = from_root(
+        "tests/data/test_file.root",
+        auxweights=["pT_lep1", "pT_lep2", "pT_jet1"],
+        name="myds",
+    )
+
+    masks, sels = ds2.selection_masks(
+        {"s1": "(pT_lep2 > 30) & (pT_jet1 < 50)", "s2": "(reg2j1b==True)"}
+    )
+
+    t = uproot.open("tests/data/test_file.root")["WtLoop_nominal"]
+    pT_lep2_g30 = t.array("pT_lep2") > 30
+    pT_jet1_l50 = t.array("pT_jet1") < 50
+    reg2j1b_ist = t.array("reg2j1b") == True
+
+    pT_lep1 = t.array("pT_lep1")
+    s1_pT_lep1 = ds2[masks["s1"]].df.pT_lep1.to_numpy()
+    s2_pT_lep1 = ds2[masks["s2"]].df.pT_lep1.to_numpy()
 
     pT_lep1_manual_s1 = pT_lep1[pT_lep2_g30 & pT_jet1_l50]
     pT_lep1_manual_s2 = pT_lep1[reg2j1b_ist]
