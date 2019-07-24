@@ -30,7 +30,7 @@ setup(
     author="Doug Davis",
     author_email="ddavis@ddavis.io",
     license="MIT",
-    url="https://github.com/drdavis/twaml",
+    url="https://github.com/douglasdavis/twaml",
     test_suite="tests",
     python_requires=">3.6.5",
     install_requires=requirements,
